@@ -16,7 +16,7 @@
 
 name: Attest Build Provenance SLSA3 Resuable Workflow
 
-# permissions: {}
+permissions: {}
 
 on:
   workflow_call:
