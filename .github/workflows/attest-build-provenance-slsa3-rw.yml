@@ -37,7 +37,7 @@ on:
         type: boolean
       github-token:
         description: >
-          The GitHub token used to make authenticated API requests.
+          The GitHub token used as environment variable GH_TOKEN to ./slsa_build.sh.
         default: ${{ github.token }}
         required: false
         type: string
@@ -77,7 +77,6 @@ jobs:
         with:
           subject-path: ${{ inputs.subject-path }}
           show-summary: ${{ inputs.show-summary }}
-          github-token: ${{ inputs.github-token }}
       - id: upload-provenance
         name: slsa3_build_provenance
         uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
