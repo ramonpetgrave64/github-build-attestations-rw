@@ -1,0 +1,70 @@
+# This workflow requires a `./slsa_build.sh` at the repository root to run your build.
+# Building and attesting are performed in two separated Jobs to elevate to SLSA3.
+
+name: Attest Build Provenance SLSA3 Resuable Workflow
+
+permissions: {}
+
+on:
+  workflow_call:
+    inputs:
+      subject-path:
+        description: >
+          Path to the artifact serving as the subject of the attestation. May contain a
+          glob pattern or list of paths (total subject count cannot exceed 2500).
+          See https://github.com/actions/attest-build-provenance?tab=readme-ov-file#identify-multiple-subjects.
+        required: true
+        type: string
+      show-summary:
+        description: >
+          Whether to attach a list of generated attestations to the workflow run
+          summary page. Defaults to true.
+        default: true
+        required: false
+        type: boolean
+      github-token:
+        description: >
+          The GitHub token used to make authenticated API requests.
+        default: ${{ github.token }}
+        required: false
+        type: string
+
+jobs:
+  build:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - id: checkout-source-repo
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.1.7
+      - id: build
+        run: ./slsa_build.sh
+        env:
+          GITHUB_TOKEN: ${{ inputs.subject-path }}
+      - id: upload-artifact
+        name: slsa3_build_artifact
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
+        with:
+          path: ${{ inputs.subject-path }}
+          if-no-files-found: error
+
+  attest:
+    permissions:
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - id: download-artifact
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
+        name: slsa3_build_artifact
+      - id: attest-build-provenance
+        uses: actions/attest-build-provenance@310b0a4a3b0b78ef57ecda988ee04b132db73ef8 # v1.4.1
+        with:
+          subject-path: ${{ inputs.subject-path }}
+          show-summary: ${{ inputs.show-summary }}
+          github-token: ${{ inputs.github-token }}
+      - id: upload-provenance
+        name: slsa3_build_provenance
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
+        with:
+          path: ${{ steps.attest-build-provenance.outputs.bundle-path }}
+          if-no-files-found: error
