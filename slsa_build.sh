@@ -2,4 +2,4 @@
 
 echo "gundam" > gundam
 echo "plus ultra" > myhero
-ls -lahR
+ls -lah

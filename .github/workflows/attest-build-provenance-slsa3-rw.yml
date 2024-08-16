@@ -42,9 +42,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ inputs.subject-path }}
       - id: upload-artifact
-        name: slsa3_build_artifact
         uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
         with:
+          name: slsa3_build_artifact
           path: ${{ inputs.subject-path }}
           if-no-files-found: error
 
