@@ -12,7 +12,7 @@ on:
         description: >
           Path to the artifact serving as the subject of the attestation. May contain a
           glob pattern or list of paths (total subject count cannot exceed 2500).
-          See https://github.com/actions/attest-build-provenance?tab=readme-ov-file#identify-multiple-subjects.
+          See https://github.com/actions/upload-artifact?tab=readme-ov-file#examples.
         required: true
         type: string
       show-summary:
