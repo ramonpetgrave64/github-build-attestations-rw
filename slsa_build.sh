@@ -1,4 +1,5 @@
 #!/bin/sh
 
-echo "gunam" > gundam
+echo "gundam" > gundam
 echo "plus ultra" > myhero
+ls -lahR
