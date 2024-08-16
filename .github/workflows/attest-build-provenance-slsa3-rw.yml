@@ -49,6 +49,7 @@ jobs:
           if-no-files-found: error
 
   attest:
+    needs: build
     permissions:
       id-token: write
     runs-on: ubuntu-latest
