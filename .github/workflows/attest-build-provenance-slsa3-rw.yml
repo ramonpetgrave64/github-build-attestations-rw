@@ -66,6 +66,7 @@ jobs:
     permissions:
       id-token: write
       attestations: write
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - id: download-artifact
