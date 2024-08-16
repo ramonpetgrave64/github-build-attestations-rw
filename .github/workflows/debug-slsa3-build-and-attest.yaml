@@ -7,8 +7,9 @@ on:
 jobs:
   build-and-attest:
     permissions:
-      id-token: write # For signing.
-      contents: read # For asset uploads.
+      id-token: write
+      attestations: write
+      contents: read
     uses: ramonpetgrave64/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@dev
     with:
       subject-path: |
