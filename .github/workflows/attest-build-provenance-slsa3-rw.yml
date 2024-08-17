@@ -21,6 +21,18 @@ permissions: {}
 on:
   workflow_call:
     inputs:
+      build-artifact-name:
+        description: >
+          The name of Github workflow artifact to store the subject files
+          default: slsa3_build_artifact
+        required: false
+        type: string
+      build-attestation-name:
+        description: >
+          The name of Github workflow artifact to store the attestation bundle file
+          default: slsa3_build_attestation
+        required: false
+        type: string
       subject-path:
         description: >
           Path to the artifact serving as the subject of the attestation. May contain a
@@ -57,7 +69,7 @@ jobs:
       - id: upload-artifact
         uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
         with:
-          name: slsa3_build_artifact
+          name: ${{ inputs.build-artifact-name }}
           path: ${{ inputs.subject-path }}
           if-no-files-found: error
 
@@ -71,15 +83,15 @@ jobs:
       - id: download-artifact
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
         with:
-          name: slsa3_build_artifact
+          name: ${{ inputs.build-artifact-name }}
       - id: attest-build-provenance
         uses: actions/attest-build-provenance@310b0a4a3b0b78ef57ecda988ee04b132db73ef8 # v1.4.1
         with:
           subject-path: ${{ inputs.subject-path }}
           show-summary: ${{ inputs.show-summary }}
       - id: upload-provenance
-        name: slsa3_build_provenance
         uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
         with:
+          name: ${{ inputs.build-attestation-name }}
           path: ${{ steps.attest-build-provenance.outputs.bundle-path }}
           if-no-files-found: error
