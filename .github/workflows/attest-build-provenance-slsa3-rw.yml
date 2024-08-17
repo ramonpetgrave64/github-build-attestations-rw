@@ -24,13 +24,13 @@ on:
       build-artifact-name:
         description: >
           The name of Github workflow artifact to store the subject files
-          default: slsa3_build_artifact
+        default: slsa3_build_artifact
         required: false
         type: string
       build-attestation-name:
         description: >
           The name of Github workflow artifact to store the attestation bundle file
-          default: slsa3_build_attestation
+        default: slsa3_build_attestation
         required: false
         type: string
       subject-path:
