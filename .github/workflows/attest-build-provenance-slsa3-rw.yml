@@ -119,7 +119,6 @@ jobs:
         with:
           name: ${{ inputs.build-artifact-name }}
       - name: with-signer-workflow
-        continue-on-error: true
         run: |
           for FILE in ./*; do
             gh attestation verify \
@@ -128,7 +127,6 @@ jobs:
               --signer-workflow "$SIGNER_WORKFLOW"
           done
       - name: with-signer-workflow-and-ref
-        continue-on-error: true
         run: |
           for FILE in ./*; do
             gh attestation verify \
@@ -137,7 +135,6 @@ jobs:
               --signer-workflow "$SIGNER_WORKFLOW_AND_REF"
           done
       - name: with-cert-identity
-        continue-on-error: true
         run: |
           for FILE in ./*; do
             gh attestation verify \
@@ -146,7 +143,6 @@ jobs:
               --cert-identity "$CERT_IDENTITY"
           done
       - name: with-semever-cert-identity-regex
-        continue-on-error: true
         run: |
           for FILE in ./*; do
             gh attestation verify \
