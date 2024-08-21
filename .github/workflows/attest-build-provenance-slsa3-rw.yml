@@ -102,10 +102,16 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
-      OWNER: ramonpetgrave
-      REPO: github-build-attestations-rw
-      SIGNER_REPO: ramonpetgrave
-      SIGNER_WORKFLOW: ramonpetgrave
+      # OWNER: ramonpetgrave
+      REPO: ramonpetgrave/github-build-attestations-rw
+      SIGNER_REPO: ramonpetgrave/ramonpetgrave
+      SIGNER_WORKFLOW: >-
+        ramonpetgrave/github-build-attestations-rw/
+        .github/workflows/attest-build-provenance-slsa3-rw.yml
+      SIGNER_WORKFLOW_AND_REF: >-
+        ramonpetgrave/github-build-attestations-rw
+        /.github/workflows/attest-build-provenance-slsa3-rw.yml
+        @refs/heads/dev
       CERT_IDENTITY: >-
         https://github.com
         /ramonpetgrave/github-build-attestations-rw
@@ -121,21 +127,28 @@ jobs:
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
         with:
           name: ${{ inputs.build-artifact-name }}
-      - name: with-signer-repo-and-owner
+      - name: with-signer-workflow
         run: |
           for FILE in ./*; do
             gh attestation verify \
               $FILE \
-              --owner "$OWNER" \
               --repo "$REPO" \
-              --signer-repo "$SIGNER_REPO" \
               --signer-workflow "$SIGNER_WORKFLOW"
+          done
+      - name: with-signer-workflow-and-ref
+        run: |
+          for FILE in ./*; do
+            gh attestation verify \
+              $FILE \
+              --repo "$REPO" \
+              --signer-workflow "$SIGNER_WORKFLOW_AND_REF"
           done
       - name: with-cert-identity
         run: |
           for FILE in ./*; do
             gh attestation verify \
               $FILE \
+              --repo "$REPO" \
               --cert-identity "$CERT_IDENTITY"
           done
       - name: with-semever-cert-identity-regex
@@ -143,5 +156,6 @@ jobs:
           for FILE in ./*; do
             gh attestation verify \
               $FILE \
+              --repo "$REPO" \
               --cert-identity-regex "$CERT_IDENTITY_REGEX"
           done
