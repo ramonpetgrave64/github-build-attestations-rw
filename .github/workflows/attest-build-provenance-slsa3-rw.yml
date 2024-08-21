@@ -135,12 +135,21 @@ jobs:
               --signer-workflow "$SIGNER_WORKFLOW_AND_REF"
           done
       - name: with-signer-workflow-and-wrong-ref
+        continue-on-error: true
         run: |
           for FILE in ./*; do
             gh attestation verify \
               $FILE \
               --repo "$REPO" \
               --signer-workflow "$SIGNER_WORKFLOW_AND_REF".rc-1
+          done
+      - name: with-signer-workflow-and-regex
+        run: |
+          for FILE in ./*; do
+            gh attestation verify \
+              $FILE \
+              --repo "$REPO" \
+              --signer-workflow "$SIGNER_WORKFLOW"@*
           done
       - name: with-cert-identity
         run: |
