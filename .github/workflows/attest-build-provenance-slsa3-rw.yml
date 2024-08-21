@@ -127,14 +127,14 @@ jobs:
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
         with:
           name: ${{ inputs.build-artifact-name }}
-      - name: with-signer-workflow
-        run: |
-          for FILE in ./*; do
-            gh attestation verify \
-              $FILE \
-              --repo "$REPO" \
-              --signer-workflow "$SIGNER_WORKFLOW"
-          done
+      # - name: with-signer-workflow
+      #   run: |
+      #     for FILE in ./*; do
+      #       gh attestation verify \
+      #         $FILE \
+      #         --repo "$REPO" \
+      #         --signer-workflow "$SIGNER_WORKFLOW"
+      #     done
       - name: with-signer-workflow-and-ref
         run: |
           for FILE in ./*; do
