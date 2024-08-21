@@ -95,3 +95,57 @@ jobs:
           name: ${{ inputs.build-attestation-name }}
           path: ${{ steps.attest-build-provenance.outputs.bundle-path }}
           if-no-files-found: error
+
+  verify:
+    needs: attest
+    runs-on: ubuntu-latest
+    env:
+      OWNER: ramonpetgrave
+      REPO: github-build-attestations-rw
+      SIGNER_REPO: ramonpetgrave
+      SIGNER_WORKFLOW: ramonpetgrave
+      CERT_IDENTITY: >-
+        https://github.com
+        /ramonpetgrave/github-build-attestations-rw
+        /.github/workflows/attest-build-provenance-slsa3-rw.yml
+        @refs/heads/dev
+      CERT_IDENTITY_REGEX: >-
+        ^https://github.com
+        /ramonpetgrave/github-build-attestations-rw
+        /.github/workflows/attest-build-provenance-slsa3-rw.yml
+        @v[0-9].[0-9].[0-9]$
+    steps:
+      - id: download-artifact
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
+        with:
+          name: ${{ inputs.build-artifact-name }}
+      - id: no-args
+        run: |
+          for FILE in ./*; do
+            gh attestation verify \
+              $FILE
+          done
+      - id: with-signer-repo-and-owner
+        run: |
+          for FILE in ./*; do
+            gh attestation verify \
+              $FILE \
+              --owner $OWNER
+              --repo $REPO \
+              --signer-repo $SIGNER_REPO \
+              --signer-workflow $SIGNER_WORKFLOW
+          done
+      - id: with-cert-identity
+        run: |
+          for FILE in ./*; do
+            gh attestation verify \
+              $FILE \
+              --cert-identity $CERT_IDENTITY
+          done
+      - id: with-semever-cert-identity-regex
+        run: |
+          for FILE in ./*; do
+            gh attestation verify \
+              $FILE \
+              --cert-identity-regex $CERT_IDENTITY_REGEX
+          done
