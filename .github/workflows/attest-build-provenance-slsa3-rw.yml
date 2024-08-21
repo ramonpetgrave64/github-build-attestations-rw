@@ -132,7 +132,7 @@ jobs:
           for FILE in ./*; do
             gh attestation verify \
               $FILE \
-              --owner $OWNER
+              --owner $OWNER \
               --repo $REPO \
               --signer-repo $SIGNER_REPO \
               --signer-workflow $SIGNER_WORKFLOW
