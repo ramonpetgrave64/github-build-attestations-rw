@@ -121,33 +121,27 @@ jobs:
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
         with:
           name: ${{ inputs.build-artifact-name }}
-      - name: no-args
-        run: |
-          for FILE in ./*; do
-            gh attestation verify \
-              $FILE
-          done
       - name: with-signer-repo-and-owner
         run: |
           for FILE in ./*; do
             gh attestation verify \
               $FILE \
-              --owner $OWNER \
-              --repo $REPO \
-              --signer-repo $SIGNER_REPO \
-              --signer-workflow $SIGNER_WORKFLOW
+              --owner "$OWNER" \
+              --repo "$REPO" \
+              --signer-repo "$SIGNER_REPO" \
+              --signer-workflow "$SIGNER_WORKFLOW"
           done
       - name: with-cert-identity
         run: |
           for FILE in ./*; do
             gh attestation verify \
               $FILE \
-              --cert-identity $CERT_IDENTITY
+              --cert-identity "$CERT_IDENTITY"
           done
       - name: with-semever-cert-identity-regex
         run: |
           for FILE in ./*; do
             gh attestation verify \
               $FILE \
-              --cert-identity-regex $CERT_IDENTITY_REGEX
+              --cert-identity-regex "$CERT_IDENTITY_REGEX"
           done
