@@ -106,8 +106,8 @@ jobs:
       REPO: ramonpetgrave/github-build-attestations-rw
       SIGNER_REPO: ramonpetgrave/ramonpetgrave
       SIGNER_WORKFLOW: >-
-        ramonpetgrave/github-build-attestations-rw/
-        .github/workflows/attest-build-provenance-slsa3-rw.yml
+        ramonpetgrave/github-build-attestations-rw
+        /.github/workflows/attest-build-provenance-slsa3-rw.yml
       SIGNER_WORKFLOW_AND_REF: >-
         ramonpetgrave/github-build-attestations-rw
         /.github/workflows/attest-build-provenance-slsa3-rw.yml
