@@ -100,6 +100,7 @@ jobs:
     needs: attest
     runs-on: ubuntu-latest
     env:
+      GH_TOKEN: ${{ github.token }}
       OWNER: ramonpetgrave
       REPO: github-build-attestations-rw
       SIGNER_REPO: ramonpetgrave
