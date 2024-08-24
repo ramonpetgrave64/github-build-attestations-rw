@@ -103,6 +103,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       BUNDLE_PATH: ${{ inputs.build-attestation-name }}
+      ARTIFACTS_FOLDER: ./artifacts
       # OWNER: ramonpetgrave
       REPO: ramonpetgrave/github-build-attestations-rw
       # SIGNER_REPO: ramonpetgrave/ramonpetgrave
@@ -123,12 +124,12 @@ jobs:
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
         with:
           name: ${{ inputs.build-attestation-name }}
-          path: ${{ inputs.build-attestation-name }}
+          path: ${{ env.BUNDLE_PATH }}
       - name: ls
         run: ls -lahR
       - name: online-with-cert-identity
         run: |
-          for FILE in ./*; do
+          for FILE in "$ARTIFACTS_FOLDER"/*; do
             gh attestation verify \
               $FILE \
               --repo "$REPO" \
@@ -136,7 +137,7 @@ jobs:
           done
       - name: offline-with-cert-identity
         run: |
-          for FILE in ./*; do
+          for FILE in "$ARTIFACTS_FOLDER"/*; do
             gh attestation verify \
               $FILE \
               --repo "$REPO" \
