@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
-      BUNDLE_PATH: ${{ inputs.build-attestation-name }}
+      ATTESTATION_FILEPATH: ./attestation.jsonl
       ARTIFACTS_FOLDER: ./artifacts
       # OWNER: ramonpetgrave
       REPO: ramonpetgrave/github-build-attestations-rw
@@ -125,7 +125,6 @@ jobs:
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
         with:
           name: ${{ inputs.build-attestation-name }}
-          path: ${{ env.BUNDLE_PATH }}
       - name: ls
         run: ls -lahR
       - name: online-with-cert-identity
@@ -143,5 +142,5 @@ jobs:
               $FILE \
               --repo "$REPO" \
               --cert-identity "$CERT_IDENTITY" \
-              --bundle $BUNDLE_PATH
+              --bundle "$ATTESTATION_FILEPATH"
           done
