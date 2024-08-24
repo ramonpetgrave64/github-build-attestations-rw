@@ -142,6 +142,6 @@ jobs:
             gh attestation verify \
               $FILE \
               --repo "$REPO" \
-              --cert-identity "$CERT_IDENTITY"
+              --cert-identity "$CERT_IDENTITY" \
               --bundle $BUNDLE_PATH
           done
