@@ -102,66 +102,30 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
+      BUNDLE_PATH: ${{ inputs.build-attestation-name }}
       # OWNER: ramonpetgrave
-      REPO: ramonpetgrave/github-build-attestations-rw
-      SIGNER_REPO: ramonpetgrave/ramonpetgrave
+      # REPO: ramonpetgrave/github-build-attestations-rw
+      # SIGNER_REPO: ramonpetgrave/ramonpetgrave
       SIGNER_WORKFLOW: >-
         ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml
       SIGNER_WORKFLOW_AND_REF: >-
         ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev
       CERT_IDENTITY: >-
         https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev
-      CERT_IDENTITY_REGEX: >-
-        ^https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@v[0-9].[0-9].[0-9]$
+      # CERT_IDENTITY_REGEX: >-
+        # ^https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@v[0-9].[0-9].[0-9]$
     steps:
       - name: download-artifact
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
         with:
           name: ${{ inputs.build-artifact-name }}
+      - name: download-attestation
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
+        with:
+          name: ${{ inputs.build-attestation-name }}
       - name: ls
         run: ls -lahR
-      - name: with-signer-workflow
-        run: |
-          for FILE in ./*; do
-            gh attestation verify \
-              $FILE \
-              --repo "$REPO" \
-              --signer-workflow "$SIGNER_WORKFLOW"
-          done
-      - name: with-signer-workflow-and-ref
-        run: |
-          for FILE in ./*; do
-            gh attestation verify \
-              $FILE \
-              --repo "$REPO" \
-              --signer-workflow "$SIGNER_WORKFLOW_AND_REF"
-          done
-      - name: with-signer-workflow-and-wrong-ref
-        continue-on-error: true
-        run: |
-          for FILE in ./*; do
-            gh attestation verify \
-              $FILE \
-              --repo "$REPO" \
-              --signer-workflow "$SIGNER_WORKFLOW_AND_REF".rc-1
-          done
-      - name: with-signer-workflow-and-optional-branch
-        run: |
-          for FILE in ./*; do
-            gh attestation verify \
-              $FILE \
-              --repo "$REPO" \
-              --signer-workflow "$SIGNER_WORKFLOW"@refs/heads/[dev|main]
-          done
-      - name: with-signer-workflow-and-regex
-        run: |
-          for FILE in ./*; do
-            gh attestation verify \
-              $FILE \
-              --repo "$REPO" \
-              --signer-workflow "$SIGNER_WORKFLOW"@*
-          done
-      - name: with-cert-identity
+      - name: online-with-cert-identity
         run: |
           for FILE in ./*; do
             gh attestation verify \
@@ -169,11 +133,12 @@ jobs:
               --repo "$REPO" \
               --cert-identity "$CERT_IDENTITY"
           done
-      - name: with-semever-cert-identity-regex
+      - name: offline-with-cert-identity
         run: |
           for FILE in ./*; do
             gh attestation verify \
               $FILE \
               --repo "$REPO" \
-              --cert-identity-regex "$CERT_IDENTITY_REGEX"
+              --cert-identity "$CERT_IDENTITY"
+              --bundle $BUNDLE_PATH
           done
