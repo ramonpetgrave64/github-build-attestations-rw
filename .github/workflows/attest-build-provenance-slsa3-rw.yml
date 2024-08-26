@@ -62,6 +62,8 @@ jobs:
     steps:
       - name: checkout-source-repo
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.1.7
+      - name: ls
+        run: ls -lahR
       - name: slsa-build
         # run: ./slsa_build.sh
         uses: ./.github/actions/sla-build
