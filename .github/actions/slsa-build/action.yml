@@ -5,14 +5,14 @@ description: >-
   The Workflow `attest-build-provenance-sls3-rw` will search invoke this action to run
   your build. You man have any steps or invoke yet another Action.
   The output `artifact-paths` will be the artifacts to be signed. You may hard-code these
-  or it can be the output of another Action, e.g. `${{ steps.my-build.outputs.my-artifact-paths }}`
+  or it can be the output of another Action, e.g. `{{ steps.my-build.outputs.my-artifact-paths }}`
 
 outputs:
   artifact-paths:
     description: >-
       list of paths to artifacts, separated by newlines. 
       See https://github.com/actions/upload-artifact?tab=readme-ov-file#upload-using-multiple-paths-and-exclusions
-      You may hard-code these or it can be the output of another Action, e.g. $${{ steps.my-build.outputs.my-artifact-paths }}
+      You may hard-code these or it can be the output of another Action, e.g. {{ steps.my-build.outputs.my-artifact-paths }}
     value: |
         ./gundam
         ./myhero
@@ -21,6 +21,7 @@ runs:
   using: composite
   steps:
     - name: build
+      shell: bash
       run: |
         echo "gundam" > gundam
         echo "plus ultra" > myhero
