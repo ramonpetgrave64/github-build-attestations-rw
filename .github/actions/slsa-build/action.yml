@@ -4,9 +4,8 @@ description: >-
   A named Action that you have at in your source repo .github/actions/slsa-build/action.yml.
   The Workflow `attest-build-provenance-sls3-rw` will search invoke this action to run
   your build. You man have any steps or invoke yet another Action.
-
   The output `artifact-paths` will be the artifacts to be signed. You may hard-code these
-  or it can be the output of another Action, e.g. $${{ steps.my-build.outputs.my-artifact-paths }}
+  or it can be the output of another Action, e.g. `${{ steps.my-build.outputs.my-artifact-paths }}`
 
 outputs:
   artifact-paths:
@@ -21,7 +20,8 @@ outputs:
 runs:
   using: composite
   steps:
-    - run: |
-      echo "gundam" > gundam
-      echo "plus ultra" > myhero
-      ls -lah
+    - name: build
+      run: |
+        echo "gundam" > gundam
+        echo "plus ultra" > myhero
+        ls -lah
