@@ -132,18 +132,31 @@ jobs:
           for FILE in "$ARTIFACTS_FOLDER"/*; do
             gh attestation verify \
               $FILE \
+              --deny-self-hosted-runners \
               --repo "$REPO" \
               --cert-identity "$CERT_IDENTITY"
           done
+      # see https://github.com/cli/cli/issues/9521
+      - name: fix-local-attestation-bundle
+        run: truncate -s -1 "$LOCAL_ATTESTATION_FILEPATH"
       - name: offline-local-attestation-with-cert-identity
         run: |
           for FILE in "$ARTIFACTS_FOLDER"/*; do
             gh attestation verify \
               $FILE \
+              --deny-self-hosted-runners \
               --repo "$REPO" \
               --cert-identity "$CERT_IDENTITY" \
               --bundle "$LOCAL_ATTESTATION_FILEPATH"
           done
-      # - name: semi-offline-downloaded-attestation-with-cert-identity
-      #   run: |
-      #     gh attestation 
+      - name: offline-downloaded-attestation-with-cert-identity-with-branch-main
+        run: |
+          for FILE in "$ARTIFACTS_FOLDER"/*; do
+            gh attestation verify \
+              $FILE \
+              --deny-self-hosted-runners \
+              --repo "$REPO" \
+              --cert-identity "$CERT_IDENTITY" \
+              --bundle "$LOCAL_ATTESTATION_FILEPATH" \
+            | jq --exit-status '.[].verificationResult.signature.certificate.sourceRepositoryRef | select(.=="refs/heads/main")'
+          done
