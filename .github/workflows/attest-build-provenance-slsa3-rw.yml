@@ -62,8 +62,9 @@ jobs:
     steps:
       - name: checkout-source-repo
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.1.7
-      - name: build
-        run: ./slsa_build.sh
+      - name: slsa-build
+        # run: ./slsa_build.sh
+        uses: ./.github/actions/sla-build
         env:
           GITHUB_TOKEN: ${{ inputs.subject-path }}
       - name: upload-artifact
@@ -102,7 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
-      ATTESTATION_FILEPATH: ./attestation.jsonl
+      LOCAL_ATTESTATION_FILEPATH: ./attestation.jsonl
       ARTIFACTS_FOLDER: ./artifacts
       # OWNER: ramonpetgrave
       REPO: ramonpetgrave/github-build-attestations-rw
@@ -135,12 +136,15 @@ jobs:
               --repo "$REPO" \
               --cert-identity "$CERT_IDENTITY"
           done
-      - name: offline-with-cert-identity
+      - name: offline-local-attestation-with-cert-identity
         run: |
           for FILE in "$ARTIFACTS_FOLDER"/*; do
             gh attestation verify \
               $FILE \
               --repo "$REPO" \
               --cert-identity "$CERT_IDENTITY" \
-              --bundle "$ATTESTATION_FILEPATH"
+              --bundle "$LOCAL_ATTESTATION_FILEPATH"
           done
+      # - name: semi-offline-downloaded-attestation-with-cert-identity
+      #   run: |
+      #     gh attestation 
