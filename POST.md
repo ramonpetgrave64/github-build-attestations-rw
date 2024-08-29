@@ -20,12 +20,12 @@ attest the artifacts in a separate `Sign` Job.
 [SLSA Build L2](https://slsa.dev/spec/v1.0/levels#build-l2-hosted-build-platform) requires that the build happens on a "trusted build platform". For Github Actions,
 we interpret this to mean that artifacts are built using Github's hosted runners, and not a user's self-hosted runners.
 
-Why not use self-hosted runners? Becuase They can be modified or maliciously compromised by their host, but we rely on Github to provide safe runners. We use github-hosted runners to help protect the integrity of the build.
+Why not use self-hosted runners? Becuase They [can be maliciously modified](https://docs.github.com/en/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security) by their host, but we can rely on Github to provide safe github-hosted runners. We use github-hosted runners to help protect the integrity of the build.
 
 The `slsa3-build-rw.yml` will run your repo's named `slsa-build` action with a runner-label that you may supply as input.
 But wee found that if a user has a [self-hosted runner labeled "ubuntu-latest"](https://github.com/slsa-framework/slsa-github-generator/issues/1868#issuecomment-1979426130) or any other of Github's default runner label, then
 Github Actions may still queue the Job on their self-hosted runners. Besides not keeping any self-hosted runners, or not
-using labels that collide, there is no know way to prevent the placement of Jobs in self-hosted runners.
+using labels that collide, [Enterprise](https://docs.github.com/en/enterprise-cloud@latest/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#restricting-the-use-of-self-hosted-runners) users can restrict the usage of self-hosted runners.
 
 #### Verifying the Runner Environment
 
