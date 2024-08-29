@@ -63,7 +63,7 @@ jobs:
   slsa3-build:
     permissions:
       contents: read
-    runs-on: ${{ inputs.build-runner-label }}`
+    runs-on: ${{ inputs.build-runner-label }}
     
     steps:
       - name: checkout-source-repo
