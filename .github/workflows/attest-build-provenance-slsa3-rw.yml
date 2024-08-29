@@ -64,8 +64,10 @@ jobs:
     permissions:
       contents: read
     runs-on: ${{ inputs.build-runner-label }}
-    if: runner.environment == 'github-hosted'
     steps:
+      - name: detect-runner
+        if: ${{ runner.environment == 'github-hosted' }}
+        run: echo "github-hosted runner detected"
       - name: checkout-source-repo
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.1.7
       - name: slsa-build
@@ -85,8 +87,10 @@ jobs:
       id-token: write
       attestations: write
     runs-on: ubuntu-latest
-    if: runner.environment == 'github-hosted'
     steps:
+      - name: detect-runner
+        if: ${{ runner.environment == 'github-hosted' }}
+        run: echo "github-hosted runner detected"
       - name: download-artifact
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
         with:
@@ -107,7 +111,6 @@ jobs:
   verify:
     needs: attest
     runs-on: ubuntu-latest
-    if: runner.environment == 'github-hosted'
     env:
       GH_TOKEN: ${{ github.token }}
       LOCAL_ATTESTATION_FILEPATH: ./attestation.jsonl
@@ -124,6 +127,9 @@ jobs:
       # CERT_IDENTITY_REGEX: >-
         # ^https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@v[0-9].[0-9].[0-9]$
     steps:
+      - name: detect-runner
+        if: ${{ runner.environment == 'github-hosted' }}
+        run: echo "github-hosted runner detected"
       - name: download-artifact
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
         with:
