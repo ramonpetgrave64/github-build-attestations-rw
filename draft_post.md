@@ -24,12 +24,48 @@ Why not use self-hosted runners? Becuase They [can be maliciously modified](http
 
 The `slsa3-build-rw.yml` will run your repo's named `slsa-build` action with a runner-label that you may supply as input.
 But we found that if a user has a [self-hosted runner labeled "ubuntu-latest"](https://github.com/slsa-framework/slsa-github-generator/issues/1868#issuecomment-1979426130) or any other of Github's default runner label, then
-Github Actions may still queue the Job on their self-hosted runners. We use the Job Step conditional
-`if: ${{ runner.environment != 'github-hosted' }}` to detect self-hosted runners, and
-quickly fail the workflow in that case.
+Github Actions may still queue the Job on their self-hosted runners.
 
 #### Verifying the Runner Environment
 
+We use a combination of methods to to detect and prevent the use of self-hosted runners, but ultimately the verifying user must
+supply the option `--deny-self-hosted-runners` to the Gtihub CLI when verifying.
+
+The first method is effective for preventing you from accidentally using self-hosted runers. 
+The second method is for detecting truly malicious self-hosted runners that try to conceal their status.
+
+1. 
+   The Github context `runner.environment` has values either `"github-hosted"` or `"self-hosted"`. But since this context is not available at
+`jobs.<job_id>.if`, but at `jobs.<job_id>.steps.if`, we must force the Job to cancel by setting the Step's `run: exit 1`, based on the Step's `if: ${{ runner.environment != 'github-hosted' }}`.
+
+    We are not yet sure if the decision to execute a Step happens locally on the runner or is more-directly controlled by Github Actions's remote orchestrator. In either case, `run: exit 1` has to execute on locally on the runner, so this is essentially a self-certification. 
+    Speculating on the potential of the former case, we try to prevent the two Jobs from producing any usable outputs by adding the same condition to their core respective steps for building and signing artifacts.
+
+    ```
+    jobs:
+    slsa3-build:
+        ...
+        steps:
+        ...
+        - name: slsa-build
+            if: ${{ runner.environment == 'github-hosted' }}
+            uses: ./.github/actions/slsa-build
+        ...
+    attest:
+        ...
+        steps:
+        ...
+        - name: attest-build-provenance
+            if: ${{ runner.environment == 'github-hosted' }}
+            id: attest-build-provenance
+            uses: actions/attest-build-provenance@310b0a4a3b0b78ef57ecda988ee04b132db73ef8 # v1.4.1
+            ...
+        ...
+    ```
+
+2.
+
+    The second method 
 We verify that the that the `Build` Job was run on a github-hosted runner by passing a mock signed attestation (not signing the user's target artifacts) from the `Build` Job to the `Sign` Job, which tries to verify the runner environment, 
 by inspecting the OIDC claims by way of the [Fulcio signing certificate](https://github.com/sigstore/fulcio/blob/main/docs/oid-info.md#mapping-oidc-token-claims-to-fulcio-oids).
 
