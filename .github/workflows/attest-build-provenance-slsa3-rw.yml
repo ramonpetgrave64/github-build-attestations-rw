@@ -60,7 +60,9 @@ on:
         type: string
 
 jobs:
-  slsa3-build:
+  build:
+    outputs:
+      job-id: ${{ github.job }}
     permissions:
       contents: read
     runs-on: ${{ inputs.build-runner-label }}
@@ -83,7 +85,7 @@ jobs:
           if-no-files-found: error
 
   attest:
-    needs: slsa3-build
+    needs: build
     permissions:
       id-token: write
       attestations: write
@@ -100,12 +102,13 @@ jobs:
         # - https://github.com/actions/runner/pull/539/files#diff-e10dd2daf26c47f8e2914b189bbbc8043bdcd073c633c9a2d29d67f0ec3b4581R77
         # - https://github.com/orgs/community/discussions/111347#discussioncomment-10490619
         env:
-          RUN_ID: $${}
-          RUN_ATTEMPT:
+          RUN_ID: ${}
+          BUILD_JOB_ID: ${{ needs.build.outputs.job-id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
           GH_TOKEN: ${{ github.token }}
         run: |
-            JOB_ID=$( gh run view "$RUN_ID" --attempt "$RUN_ATTEMPT" --json jobs | jq '.jobs[] | select(.name|endswith("/ slsa3-build")) | .databaseId' )
-            JOB_LOGS=$( gh run view "$RUN_ID" --job "$JOB_ID" --log | sed -n -e '/Set up job/I,/Complete job name/I p' )
+            # $BUILD_JOB_ID=$( gh run view "$RUN_ID" --attempt "$RUN_ATTEMPT" --json jobs | jq '.jobs[] | select(.name|endswith("/ build")) | .databaseId' )
+            JOB_LOGS=$( gh run view "$RUN_ID" --job "$BUILD_JOB_ID" --log | sed -n -e '/Set up job/I,/Complete job name/I p' )
             if grep -qi "Machine name:" <<< $JOB_LOGS; then
                 echo "detected a self-hosted runner, aborting attestation!"
                 exit 1
