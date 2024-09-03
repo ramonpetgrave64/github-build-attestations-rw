@@ -60,7 +60,7 @@ on:
         type: string
 
 jobs:
-  build:
+  build-:
     outputs:
       job-id: ${{ github.job }}
     permissions:
@@ -91,6 +91,10 @@ jobs:
       attestations: write
     runs-on: ubuntu-latest
     steps:
+      - name: debug-context
+        run: |
+          echo github.job ${{ github.job }}
+          echo github.workflow ${{ github.workflow }}
       - name: detect-runner
         if: ${{ runner.environment != 'github-hosted' }}
         run: echo "self-hosted runner detected, failing job!" && exit 1
@@ -102,6 +106,7 @@ jobs:
         # - https://github.com/actions/runner/pull/539/files#diff-e10dd2daf26c47f8e2914b189bbbc8043bdcd073c633c9a2d29d67f0ec3b4581R77
         # - https://github.com/orgs/community/discussions/111347#discussioncomment-10490619
         env:
+          WORKFLOW_NAME: 
           RUN_ID: ${}
           BUILD_JOB_ID: ${{ needs.build.outputs.job-id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
