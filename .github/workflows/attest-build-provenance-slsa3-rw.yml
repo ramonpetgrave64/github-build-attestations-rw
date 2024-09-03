@@ -60,7 +60,7 @@ on:
         type: string
 
 jobs:
-  build-:
+  build:
     outputs:
       job-id: ${{ github.job }}
     permissions:
