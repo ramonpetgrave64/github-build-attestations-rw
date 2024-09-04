@@ -1,8 +1,35 @@
-Github has an official Action for creating signed SLSA attestations. Since it is an Action, you can use it in the same Workflow Job as your build, adjacent to your other build steps. This presents the risk that a compromised build process, perhaps by malicious upstream dependencies, can have access to the secret signing material used to create your SLSA attestations.
+Github has an official Action for creating signed SLSA attestations and CLI tool for verifying artifacts against those attestations.
 
-While the signed attestations are a great step towards securing the distribution of your built artifacts, Github's documentation suggests using Reusable Workflows to elevate your builds to SLSA Build Level 3.
+While the signed attestations are a great step towards securing the distribution of your built artifacts, Github's [documentation](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-and-reusable-workflows-to-achieve-slsa-v1-build-level-3) suggests using Reusable Workflows to elevate your builds to SLSA Build Level 3, which is designed to mitigate these risks:
 
-This post discusses and demonstrates how to meet [slsa.dev's requirements](https://slsa.dev/spec/v1.0/levels#build-track) using Github's `actions/attest-build-artifacts` Action with Reusable Workflows.
+    * unapproved changes (brancges or tags)
+    * exposed secret signing material
+    * self-hosted runners
+    * ambiguous build steps
+
+This post discusses and demonstrates how create a Reusable Workflow and verify artifacts to meet [slsa.dev's requirements](https://slsa.dev/spec/v1.0/levels#build-track) using Github's `actions/attest-build-artifacts`. First we show the complete way to verify artifacts produced by this workflow. Then we discuss how the workflow hardens your builds to meet L3 requirements.
+
+## Verification: Approved Changes
+
+[Verifying artifacts](https://slsa.dev/spec/v1.0/verifying-artifacts) is an equally critical step for consumers.
+
+At a minimum, the CLI `gh attestation verify ...` requires both the path to an artifact and either an expected source `--owner` or `--repo`.
+By default the CLI does not check the `--signer-workflow`.
+
+Since it is common in many organizations for developers to run builds and workflows from non-official branches, we'll impose some additional requirements
+for the verifier to be sure that both the source repo and signer workflow are from approved branches or tags. Verifying the signing workflow's branch means
+that we're sure that the artifact was built to meet L3 requirements.
+
+Caveat: The CLI does not yet supprt verifying the source branch, so we use a combination of its `--jq` option and `grep` to check.
+
+```
+SOURCE_REF="refs/heads/main"
+gh attestation verify $ARTIFACT_PATH \
+    --repo ramonpetgrave/github-build-attestations-rw  \
+    --cert-identity "https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev" 
+    --format json --jq '.[].verificationResult.signature.certificate.sourceRepositoryRef' \
+| grep "^$SOURCE_REF$"
+```
 
 ## Hardening
 
@@ -64,25 +91,73 @@ The second method is for detecting truly malicious self-hosted runners that try 
     ```
 
 2.
+    The second method examines the logs of the `Build` Job for [special markers](https://github.com/orgs/community/discussions
+111347#discussioncomment-10490619) to positively identify self-hosted runners. The `Attest` Job will perform this step before deciding to 
+sign the build artifacts. And then to check the honesty of the `Sign` Job, the verifier must check the OIDC claims that the `Sign`
+Job was using a github-hosted runner. The veriier ensures that the `Sign` Job was github-hosted, which ensures that the `Build` Job was github-hosted.
 
-    The second method 
-We verify that the that the `Build` Job was run on a github-hosted runner by passing a mock signed attestation (not signing the user's target artifacts) from the `Build` Job to the `Sign` Job, which tries to verify the runner environment, 
-by inspecting the OIDC claims by way of the [Fulcio signing certificate](https://github.com/sigstore/fulcio/blob/main/docs/oid-info.md#mapping-oidc-token-claims-to-fulcio-oids).
-
-Finally, outside of the Workflow, the end user of the artifact and attestation will have to veirfy that a github-hosted runner was used by the `sign` Job:
-
-```
-$ gh attestation verify my-artifact --bundle attestation.jsonl --repo my-org/my-repo  --signer-workflow "my-signer-org/my-signer-repo/.github/workflows/my-signer-workflow.yml" --format json | jq --exit-status '.[].verificationResult.signature.certificate.runnerEnvironment | select(.=="github-hosted")'
-"github-hosted"
-```
+    ```
+        - name: detect-build-job-runner
+            # Get the job id number of `run-slsa-build-action`. Then get the logs of the "Set up job" activity.
+            # these logs contain markers that identity use of self-hosted runners.
+            # "Machine name:" should only appear in the logs for self-hosted runners.
+            # See
+            # - https://github.com/actions/runner/pull/539/files#diff-e10dd2daf26c47f8e2914b189bbbc8043bdcd073c633c9a2d29d67f0ec3b4581R77
+            # - https://github.com/orgs/community/discussions/111347#discussioncomment-10490619
+            # Since there may be multiple Jobs named `run-slsa-build-action`, and our Job name is particular, we retrieve the logs for all 
+            # Jobs with that name.
+            env:
+            WORKFLOW_NAME: 
+            RUN_ID: ${}
+            BUILD_JOB_ID: ${{ needs.run-slsa-build-action.outputs.job-id }}
+            RUN_ATTEMPT: ${{ github.run_attempt }}
+            GH_TOKEN: ${{ github.token }}
+            run: |
+            BUILD_JOB_IDS=$(
+                gh run view "$RUN_ID" --attempt "$RUN_ATTEMPT" --json jobs \
+                    --jq '.jobs[] | select((.conclusion="success") and (.name | endswith("build"))) | .databaseId'
+            )
+            while read -r ID; do
+                echo getting "Set up job" logs for Job "$ID"
+                JOB_LOGS=$( gh run view "$RUN_ID" --job "$ID" --log | sed -n -e '/Set up job/I,/Complete job name/I p' )
+                ABORT=false
+                if grep -qi "Machine name:" <<< "$JOB_LOGS"; then
+                    echo "detected a self-hosted runner, aborting attestation!"
+                    ABORT=true
+                else
+                    echo "self-hosted runner not detected."
+                fi
+            done <<< "$BUILD_JOB_IDS"
+            if [ "$ABORT" = true ]; then
+                echo "Detected self hosted runner. Aborting"
+                exit 1
+            else
+                echo "No self hosted runner detected. Proceeding."
+                
+    ```
 
 ### L1: Recorded Build Parameters
 
 [SLSA Build L1](https://slsa.dev/spec/v1.0/levels#build-l1) requires that verifier must be able to form unambiguous expectations about the build process.
 
-This can mean that our Reusable Workflow invokes pre-recorded commands, such as a Makefile, or `go build`.
-For this reusable workfow, you have some more flexibility to fit more build styles: 
+#### Workflow Inputs
 
-Instead, we can place all of your build commands into a new Action that this post instructs you to author into your repo
+The Action `actions/attest-build-provenance` cannot [record workflow inputs to provenance](https://github.com/actions/attest-build-provenance/issues/55), althogh it should be
+possible for a custom reusable workflow to create a custom predicate to be used in the base action `actions/attest`. The verifier
+must then trust the reusable workflow to record the result of `toJson(inputs)` into the predicate, and verify the expected values
+of the hypothetical new field ` gh attestation verify ... --format json --jq '.[].verificationResult.statement.predicate.buildDefinition.externalParameters.workflow.inputs`.
+
+#### Well-known Build Steps
+
+To keep expectations more simple, our reeusable Workflow can invoke the source repo's pre-recorded or well-known commands,
+such as a Makefile, or `go build`. 
+
+For flexibility this reusable Workflow asks you to place all of your build commands into a new Action in your repo
 at `./github/actions/slsa-build`. This well-known location for the Action will be invoked by the reusable workflow
 as part of the `Build` Job.
+
+##### Variable Build Job Runner Label
+
+Their is one caveat that we feel is acceptable: We allow the workflow input `build-runner-label` to determine the runner-label
+for the  `Build` Job's `runs-on: ${{ inputs.build-runner-label }}`. Technically, this is an external parameter that could potentially
+not be recored neither in source code nor in provenance, but the differences in runner operating systems (`ubuntu-latest` vs `windows-latest`) are clear enough to be unambiguous. 
