@@ -110,6 +110,7 @@ jobs:
         # Jobs with that name.
         env:
           REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
           GH_TOKEN: ${{ github.token }}
         run: |
