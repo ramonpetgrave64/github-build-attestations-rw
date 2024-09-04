@@ -109,7 +109,7 @@ jobs:
         # Since there may be multiple Jobs named `run-slsa-build-action`, and our Job name is particular, we retrieve the logs for all 
         # Jobs with that name.
         env:
-          REPO: ${ github.repository }
+          REPO: ${{ github.repository }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
           GH_TOKEN: ${{ github.token }}
         run: |
