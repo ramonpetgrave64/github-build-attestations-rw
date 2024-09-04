@@ -109,19 +109,17 @@ jobs:
         # Since there may be multiple Jobs named `run-slsa-build-action`, and our Job name is particular, we retrieve the logs for all 
         # Jobs with that name.
         env:
-          WORKFLOW_NAME: 
-          RUN_ID: ${}
-          BUILD_JOB_ID: ${{ needs.run-slsa-build-action.outputs.job-id }}
+          REPO: ${ github.repository }
           RUN_ATTEMPT: ${{ github.run_attempt }}
           GH_TOKEN: ${{ github.token }}
         run: |
           BUILD_JOB_IDS=$(
-            gh run view "$RUN_ID" --attempt "$RUN_ATTEMPT" --json jobs \
+            gh run view "$RUN_ID" --repo "$REPO" --attempt "$RUN_ATTEMPT" --json jobs \
                 --jq '.jobs[] | select((.conclusion="success") and (.name | endswith("run-slsa-build-action"))) | .databaseId'
           )
           while read -r ID; do
               echo getting "Set up job" logs for Job "$ID"
-              JOB_LOGS=$( gh run view "$RUN_ID" --job "$ID" --log | sed -n -e '/Set up job/I,/Complete job name/I p' )
+              JOB_LOGS=$( gh run view "$RUN_ID" --repo "$REPO" --job "$ID" --log | sed -n -e '/Set up job/I,/Complete job name/I p' )
               ABORT=false
               if grep -qi "Machine name:" <<< "$JOB_LOGS"; then
                   echo "detected a self-hosted runner, aborting attestation!"
