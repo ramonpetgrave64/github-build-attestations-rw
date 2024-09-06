@@ -156,7 +156,7 @@ jobs:
           fi
       # actions/download-artifact@v4 does not yet support downloading via the immutable artifact-id,
       # but the Javascript library does. See: https://github.com/actions/download-artifact/issues/349
-      - run: npm install @actions/artifact@2.1.9
+      - run: npm install --global @actions/artifact@2.1.9
       - name: download-artifact
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
