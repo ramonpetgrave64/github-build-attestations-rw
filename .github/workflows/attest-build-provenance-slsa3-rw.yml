@@ -166,6 +166,7 @@ jobs:
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID } = process.env
             await artifactClient.downloadArtifact(ARTIFACT_ID)
+      - run: ls -lahR
       - name: attest-build-provenance
         if: ${{ runner.environment == 'github-hosted' }}
         id: attest-build-provenance
