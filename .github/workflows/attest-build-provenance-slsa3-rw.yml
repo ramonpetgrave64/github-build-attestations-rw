@@ -75,7 +75,7 @@ on:
           The runner label to pass to `runs-on:`. e.g., "ubuntu-latest". 
         required: true
         type: string
-      verify-signer-workflow-cert-identity:
+      test-verify-signer-workflow-cert-identity:
         description: >
           The signer workflow's --cert-identity to use in the `verify` Job, to make sure the
           artifacts and attestations can be verified with the Github CLI.
@@ -188,7 +188,7 @@ jobs:
           path: ${{ steps.attest-build-provenance.outputs.bundle-path }}
           if-no-files-found: error
 
-  verify:
+  test-verify:
     needs: attest-build-artifacts
     runs-on: ubuntu-latest
     env:
@@ -197,7 +197,7 @@ jobs:
       ARTIFACTS_FOLDER: ./artifacts
       SOURCE_REPO: ${{ github.repository }}
       SOURCE_REF: ${{ github.ref }}
-      SIGNER_WORKFLOW_CERT_IDENTITY: ${{ inputs.verify-signer-workflow-cert-identity }}
+      SIGNER_WORKFLOW_CERT_IDENTITY: ${{ inputs.test-verify-signer-workflow-cert-identity }}
     steps:
       - name: detect-runner
         if: ${{ runner.environment != 'github-hosted' }}
