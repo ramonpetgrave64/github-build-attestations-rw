@@ -148,7 +148,7 @@ jobs:
           ARTIFACT_ID: ${{ needs.run-slsa-build-action.outputs.artifact-id }}
         with:
           script: |
-            import artifactClient from '@actions/artifact'
+            const artifactClient = require('@actions/artifact')
             const { ARTIFACT_ID } = process.env
             await artifactClient.downloadArtifact(ARTIFACT_ID)
       - name: attest-build-provenance
