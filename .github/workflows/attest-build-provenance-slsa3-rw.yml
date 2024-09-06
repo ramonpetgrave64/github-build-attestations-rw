@@ -195,7 +195,6 @@ jobs:
       - name: ls
         run: ls -lahR
       - name: online-verify-with-cert-identity
-        # TODO: also check the source branch/ref
         run: |
           for FILE in "$ARTIFACTS_FOLDER"/*; do
             gh attestation verify \
