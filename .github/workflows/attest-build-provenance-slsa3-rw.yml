@@ -1,6 +1,22 @@
-# This workflow requires a `./slsa_build.sh` at the repository root to run your build.
 # Building and attesting are performed in two separated Jobs to elevate to SLSA3.
-# Example:
+# This workflow requires a `./slsa_build.sh` at the repository root to run your build.
+
+# This workflow invokes your Build Action at `.github/actions/slsa-build`'s `action.yml`
+# Example `.github/actions/slsa-build/action.yml`
+
+# name: SLSA3 Build
+# description: >-
+#   A named Action that you have at in your source repo .github/actions/slsa-build/action.yml.
+#   The Workflow `attest-build-provenance-sls3-rw` will search invoke this action to run
+#   your build. You man have any steps or invoke yet another Action.
+# runs:
+#   using: composite
+#   steps:
+#     - name: build
+#       shell: bash
+#       run: make release
+
+# Example workflow invocation:
 
 # jobs:
 #   build-and-attest:
