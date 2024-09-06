@@ -189,7 +189,7 @@ jobs:
       LOCAL_ATTESTATION_FILEPATH: ./attestation.jsonl
       ARTIFACTS_FOLDER: ./artifacts
       # OWNER: ramonpetgrave
-      SOURCE_REPO: ramonpetgrave/github-build-attestations-rw
+      SOURCE_REPO: ${{ github.repository }}
       SOURCE_REF: ${{ github.ref }}
       # SIGNER_REPO: ramonpetgrave/ramonpetgrave
       SIGNER_WORKFLOW: >-
