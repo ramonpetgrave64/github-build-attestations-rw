@@ -82,6 +82,15 @@ on:
         required: false
         default: https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev
         type: string
+    outputs:
+      build-artifact-id:
+        description: >
+          The artifact-id of the build artifacts. See the `download-artifact` Step for how to use.
+        value: ${{ jobs.run-slsa-build-action.outputs.artifact-id }}
+      attestation-artifact-id:
+        description: >
+          The artifact-id of the build attestations. See the `download-artifact` Step for how to use.
+        value: ${{ jobs.attest-build-artifacts.outputs.attestation-artifact-id }}
 
 jobs:
   run-slsa-build-action:
@@ -111,6 +120,8 @@ jobs:
           if-no-files-found: error
 
   attest-build-artifacts:
+    outputs:
+      attestation-artifact-id: ${{ steps.upload-attestation.outputs.artifact-id }}
     needs: run-slsa-build-action
     permissions:
       id-token: write
@@ -181,7 +192,8 @@ jobs:
         with:
           subject-path: ./artifacts/*
           show-summary: ${{ inputs.show-summary }}
-      - name: upload-provenance
+      - name: upload-attestation
+        id: upload-attestation
         uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
         with:
           name: ${{ inputs.build-attestation-name }}
@@ -189,6 +201,7 @@ jobs:
           if-no-files-found: error
 
   test-verify:
+    # TODO: donwload with artifact-ids
     needs: attest-build-artifacts
     runs-on: ubuntu-latest
     env:
