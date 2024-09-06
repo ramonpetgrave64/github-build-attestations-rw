@@ -138,10 +138,8 @@ jobs:
               echo "No self hosted runner detected. Proceeding."
               exit 0
           fi
-      # - name: download-artifact
-      #   uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
-      #   with:
-      #     name: ${{ inputs.build-artifact-name }}
+      # actions/download-artifact@v4 does not yet support downloading via the immutable artifact-id,
+      # but the Javascript library does. See: https://github.com/actions/download-artifact/issues/349
       - run: npm install @actions/artifact@2.1.9
       - name: download-artifact
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
@@ -174,13 +172,14 @@ jobs:
       LOCAL_ATTESTATION_FILEPATH: ./attestation.jsonl
       ARTIFACTS_FOLDER: ./artifacts
       # OWNER: ramonpetgrave
-      REPO: ramonpetgrave/github-build-attestations-rw
+      SOURCE_REPO: ramonpetgrave/github-build-attestations-rw
+      SOURCE_REF: ${{ github.ref }}
       # SIGNER_REPO: ramonpetgrave/ramonpetgrave
       SIGNER_WORKFLOW: >-
         ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml
       SIGNER_WORKFLOW_AND_REF: >-
         ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev
-      CERT_IDENTITY: >-
+      SIGNER_WORKFLOW_CERT_IDENTITY: >-
         https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev
       # CERT_IDENTITY_REGEX: >-
         # ^https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@v[0-9].[0-9].[0-9]$
@@ -193,10 +192,6 @@ jobs:
         with:
           name: ${{ inputs.build-artifact-name }}
           path: ${{ env.ARTIFACTS_FOLDER }}
-      - name: download-attestation
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4.1.8
-        with:
-          name: ${{ inputs.build-attestation-name }}
       - name: ls
         run: ls -lahR
       - name: online-verify-with-cert-identity
@@ -206,6 +201,8 @@ jobs:
             gh attestation verify \
               $FILE \
               --deny-self-hosted-runners \
-              --repo "$REPO" \
-              --cert-identity "$CERT_IDENTITY"
+              --repo "$SOURCE_REPO" \
+              --cert-identity "$SIGNER_WORKFLOW_CERT_IDENTITY" \
+              --format json --jq '.[].verificationResult.signature.certificate.sourceRepositoryRef' \
+            | grep "^$SOURCE_REF$"
           done

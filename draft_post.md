@@ -14,7 +14,7 @@ This post discusses and demonstrates how create a Reusable Workflow and verify a
 [Verifying artifacts](https://slsa.dev/spec/v1.0/verifying-artifacts) is an equally critical step for consumers.
 
 At a minimum, the CLI `gh attestation verify ...` requires both the path to an artifact and either an expected source `--owner` or `--repo`.
-By default the CLI does not check the `--signer-workflow`.
+By default the CLI does not check the `--signer-workflow` or its equivalent: `--cert-identity`.
 
 Since it is common in many organizations for developers to run builds and workflows from non-official branches, we'll impose some additional requirements
 for the verifier to be sure that both the source repo and signer workflow are from approved branches or tags. Verifying the signing workflow's branch means
@@ -23,10 +23,13 @@ that we're sure that the artifact was built to meet L3 requirements.
 Caveat: The CLI does not yet supprt verifying the source branch, so we use a combination of its `--jq` option and `grep` to check.
 
 ```
+SOURCE_REPO="ramonpetgrave/github-build-attestations-rw"
 SOURCE_REF="refs/heads/main"
+SIGNER_WORKFLOW_CERT_IDENTITY="https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev"
 gh attestation verify $ARTIFACT_PATH \
-    --repo ramonpetgrave/github-build-attestations-rw  \
-    --cert-identity "https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev" 
+    --deny-self-hosted-runners \
+    --repo "$SOURCE_REPO"  \
+    --cert-identity "$SIGNER_WORKFLOW_CERT_IDENTITY" 
     --format json --jq '.[].verificationResult.signature.certificate.sourceRepositoryRef' \
 | grep "^$SOURCE_REF$"
 ```
@@ -37,11 +40,14 @@ The simplest initial step is to isolate signing into a separate Job. We must als
 
 ### L3: Isolate Secret Signing Material
 
-[SLSA Build L3](https://slsa.dev/spec/v1.0/levels#build-l3-hardened-builds) requires that the the secret signing material
-and other credentials (such as package registry credectials), be inaccesible by the build steps.
+[SLSA Build L3](https://slsa.dev/spec/v1.0/levels#build-l3-hardened-builds) requires that the 
+
+ * the secret signing material and other credentials (such as package registry credectials), be inaccesible by the build steps.
+ * other Jobs do no influence our Build and Sign Jobs.
 
 The `slsa3-build-rw.yml` will run your repo's named `slsa-build` action in a low-privilege `Build` Job, and then 
 attest the artifacts in a separate `Sign` Job.
+
 ### L2: Trusted Build Platforms
 
 [SLSA Build L2](https://slsa.dev/spec/v1.0/levels#build-l2-hosted-build-platform) requires that the build happens on a "trusted build platform". For Github Actions,
@@ -135,6 +141,38 @@ Job was using a github-hosted runner. The veriier ensures that the `Sign` Job wa
                 echo "No self hosted runner detected. Proceeding."
                 
     ```
+
+3.
+    There is a third, but **risky** method that we do not implement in our reusable workflow. In this method, the build Job has permision to request an OIDC token.
+    with the claims that it is github-hosted. This claim would also be present in a stub attestation (not of the real build artifact) that the Attest Job can verify.
+    This is risky because if the runner is self-hosted and malicious, then it could sign arbitrary attacker artifacts that would have the same
+    source and signer workflow as your real artifacts! One mitigation would be to run the Build job in yet another reusable workflow to produce
+    a stub attestation that has a different signer workflow identity (e.g., `/do-not-verify-with.yml`) than our calling reusable workflow. This is still risky
+    because now your verifiers must be diligent to invoke the CLI with `--signer-workflow` or `--cert-identity`. Without specifying those options, they could accept
+    attacker-provided artifacts as valid, having the same source `--repo`.
+
+
+#### Isolation from Other Jobs
+
+We trust that the Jobs are sufficiently isolated, but our Build Job needs to upload the build artifact to be downloaded by the Sign Job.
+It's possible for other Jobs within the calling workflow, but outside of our reusable workflow, to re-upload an artifact with the same name, overwriting 
+our original build artifact, so that our Sign job inadvertently attests the wrong artifact.
+
+Uploads with `actions/upload-artifact@v4` are meant to be immutable with an `artifact-id` rather than by `name`, but `actions/download-artifact@v4` does not yet [support](https://github.com/actions/download-artifact/issues/349) 
+donwloading with `artifact-id`. For now, we download with `actions/github-script@v7` and the `@actions/artifact` Javascript library.
+
+```
+      - run: npm install @actions/artifact@2.1.9
+      - name: download-artifact
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          ARTIFACT_ID: ${{ needs.run-slsa-build-action.outputs.artifact-id }}
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { ARTIFACT_ID } = process.env
+            await artifactClient.downloadArtifact(ARTIFACT_ID)
+```
 
 ### L1: Recorded Build Parameters
 
