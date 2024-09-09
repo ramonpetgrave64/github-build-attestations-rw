@@ -38,8 +38,8 @@ jobs:
     with:
       self-hosted-runner-check-high-perms: true
       build-runner-label: ubuntu-latest
-      build-artifact-name: alt-artifact
-      build-attestation-name: alt-attestation
+      build-artifact-name: alt-artifact-high-perms
+      build-attestation-name: alt-attestation-high-perms
       subject-path: |
         ./gundam
         ./myhero
