@@ -227,6 +227,7 @@ jobs:
 
   test-verify:
     needs: sign
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
