@@ -104,6 +104,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      attestations: write
     uses: ./.github/workflows/stub-workflow-do-not-trust.yml
     with: 
       build-runner-label: ${{ inputs.build-runner-label }}
