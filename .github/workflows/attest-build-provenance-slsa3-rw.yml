@@ -162,6 +162,9 @@ jobs:
       ARTIFACTS_FOLDER: ./artifacts
       ATTESTATIONS_FOLDER: ./attestations
     steps:
+      - name: detect-runner
+        if: ${{ runner.environment != 'github-hosted' }}
+        run: echo "self-hosted runner detected, failing job!" && exit 1
       # actions/download-artifact@v4 does not yet support downloading via the immutable artifact-id,
       # but the Javascript library does. See: https://github.com/actions/download-artifact/issues/349
       - run: npm install @actions/artifact@2.1.9
