@@ -6,7 +6,7 @@
     - [Build Hardening](#build-hardening)
       - [L3: Isolate Secret Signing Material](#l3-isolate-secret-signing-material)
       - [L2: Trusted Build Platforms](#l2-trusted-build-platforms)
-        - [Verifying the Runner Environment](#verifying-the-runner-environment)
+        - [Verifying Github-Hosted Runners](#verifying-github-hosted-runners)
         - [Isolation from Other Jobs](#isolation-from-other-jobs)
       - [L1: Recorded Build Parameters](#l1-recorded-build-parameters)
         - [Workflow Inputs](#workflow-inputs)
@@ -89,7 +89,7 @@ The `slsa3-build-rw.yml` will run your repo's named `slsa-build` action with a r
 But we found that if a user has a [self-hosted runner labeled "ubuntu-latest"](https://github.com/slsa-framework/slsa-github-generator/issues/1868#issuecomment-1979426130) or any other of Github's default runner label, then
 Github Actions may still queue the Job on their self-hosted runners.
 
-##### Verifying the Runner Environment
+##### Verifying Github-Hosted Runners
 
 We use a combination of methods to to detect and prevent the use of self-hosted runners, but ultimately the verifying user must
 supply the option `--deny-self-hosted-runners` to the Gtihub CLI when verifying.
@@ -127,8 +127,24 @@ The second method is for detecting truly malicious self-hosted runners that try 
     ```
 
 2.
-    The second method examines the logs of the Build Job for [special markers](https://github.com/orgs/community/discussions
-111347#discussioncomment-10490619) to positively identify self-hosted runners. The Signing Job will perform this step before deciding to 
+    There is a second, but **risky** method that we implement in our reusable workflow. In this method, the build Job has permision
+    to request an OIDC token. with the claims that it is github-hosted. This claim would also be present in a stub attestation
+    (not of the real build artifact) that the Attest Job can verify. This is risky because if the runner is self-hosted and malicious,
+    then it could sign arbitrary attacker artifacts that would have the same source and signer workflow as your real artifacts!
+
+    Our mitigation is to run the Build job in yet another reusable workflow to produce a stub attestation that has a different
+    signer workflow identity (e.g., `/sub-workflow-do-not-trust.yml`) than our calling reusable workflow. This is still risky because now your
+    verifiers must be diligent to invoke the CLI with `--signer-workflow` or `--cert-identity`. Without specifying those options,
+    they could accept attacker-provided artifacts as valid, having the same source `--repo`.
+
+    Given the risk, the use of this method is optional and turned off by default with `self-hosted-runner-check-high-perm`.
+
+3.
+    The third potential method examines the logs of the Build Job for [special markers](https://github.com/orgs/community/discussions
+111347#discussioncomment-10490619) to positively identify self-hosted runners. We cannot use this method within the reusable workflow
+because Github's API only makes the logs available after the workflow run has completed.
+
+    Here's how it could work: The Signing Job would perform this step before deciding to
 sign the build artifacts. And then to check the honesty of the Signing Job, the verifier must check the OIDC claims that the Signing
 Job was using a github-hosted runner. The veriier ensures that the Signing Job was github-hosted, which ensures that the Build Job was github-hosted.
 
@@ -171,16 +187,6 @@ Job was using a github-hosted runner. The veriier ensures that the Signing Job w
                 echo "No self hosted runner detected. Proceeding."
                 
     ```
-
-3.
-    There is a third, but **risky** method that we do not implement in our reusable workflow. In this method, the build Job has permision
-    to request an OIDC token. with the claims that it is github-hosted. This claim would also be present in a stub attestation
-    (not of the real build artifact) that the Attest Job can verify. This is risky because if the runner is self-hosted and malicious,
-    then it could sign arbitrary attacker artifacts that would have the same source and signer workflow as your real artifacts!
-    One mitigation would be to run the Build job in yet another reusable workflow to produce a stub attestation that has a different
-    signer workflow identity (e.g., `/do-not-verify-with.yml`) than our calling reusable workflow. This is still risky because now your
-    verifiers must be diligent to invoke the CLI with `--signer-workflow` or `--cert-identity`. Without specifying those options,
-    they could accept attacker-provided artifacts as valid, having the same source `--repo`.
 
 
 ##### Isolation from Other Jobs
