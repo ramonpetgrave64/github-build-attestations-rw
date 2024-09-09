@@ -38,16 +38,16 @@ on:
     outputs:
       build-artifact-id:
         description: The artifact-id of the build artifacts. See the `download-artifact` Step for how to use.
-        value: ${{ jobs.run-slsa-build-action.outputs.build-artifact-id }}
+        value: ${{ jobs.build-high-perms.outputs.build-artifact-id }}
       stub-artifact-id:
         description: The artifact-id of the stub artifact and bundle attestation file.
-        value: ${{ jobs.run-slsa-build-action.outputs.stub-artifact-id }}
+        value: ${{ jobs.build-high-perms.outputs.stub-artifact-id }}
       stub-attestation-id:
         description: The artifact-id of the stub artifact's bundle attestation file.
-        value: ${{ jobs.run-slsa-build-action.outputs.stub-attestation-id }}
+        value: ${{ jobs.build-high-perms.outputs.stub-attestation-id }}
 
 jobs:
-  run-slsa-build-action:
+  build-high-perms:
     outputs:
       build-artifact-id: ${{ steps.upload-build-artifact.outputs.artifact-id }}
       stub-artifact-id: ${{ steps.upload-stub-artifact.outputs.artifact-id }}
