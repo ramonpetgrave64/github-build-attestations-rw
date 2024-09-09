@@ -58,16 +58,16 @@ jobs:
       attestations: write
     runs-on: ${{ inputs.build-runner-label }}
     steps:
-      # - name: detect-runner
-      # if: ${{ runner.environment != 'github-hosted' }}
-      # run: echo "self-hosted runner detected, failing job!" && exit 1
+      - name: detect-runner
+        if: ${{ runner.environment != 'github-hosted' }}
+        run: echo "self-hosted runner detected, failing job!" && exit 1
       - name: checkout-source-repo
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.1.7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
       - name: slsa-build
-        # if: ${{ runner.environment == 'github-hosted' }}
+        if: ${{ runner.environment == 'github-hosted' }}
         uses: ./.github/actions/slsa-build
         env:
           GITHUB_TOKEN: ${{ inputs.build-github-token }}
@@ -79,7 +79,7 @@ jobs:
           path: ${{ inputs.subject-path }}
           if-no-files-found: error
       - name: attest-stub
-        # if: ${{ runner.environment == 'github-hosted' }}
+        if: ${{ runner.environment == 'github-hosted' }}
         id: attest-stub
         uses: actions/attest-build-provenance@310b0a4a3b0b78ef57ecda988ee04b132db73ef8 # v1.4.1
         with:
