@@ -258,7 +258,7 @@ jobs:
         with:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
-            const { ATTESTATION_ARTIFACT_ID, ARTIFACTS_FOLDER } = process.env
+            const { ATTESTATION_ARTIFACT_ID, ATTESTATIONS_FOLDER } = process.env
             await artifactClient.downloadArtifact(ATTESTATION_ARTIFACT_ID, { path: ATTESTATIONS_FOLDER})
       - name: online-verify-with-cert-identity
         run: |
