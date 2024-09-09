@@ -226,7 +226,7 @@ jobs:
           if-no-files-found: error
 
   test-verify:
-    needs: [sign]
+    needs: sign
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
