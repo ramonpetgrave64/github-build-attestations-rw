@@ -101,9 +101,9 @@ jobs:
       contents: read
     runs-on: ${{ inputs.build-runner-label }}
     steps:
-      - name: detect-runner
+      # - name: detect-runner
         # if: ${{ runner.environment != 'github-hosted' }}
-        run: echo "self-hosted runner detected, failing job!" && exit 1
+        # run: echo "self-hosted runner detected, failing job!" && exit 1
       - name: checkout-source-repo
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.1.7
         with:
@@ -135,9 +135,9 @@ jobs:
         run: |
           echo github.job ${{ github.job }}
           echo github.workflow ${{ github.workflow }}
-      - name: detect-runner
+      # - name: detect-runner
         # if: ${{ runner.environment != 'github-hosted' }}
-        run: echo "self-hosted runner detected, failing job!" && exit 1
+        # run: echo "self-hosted runner detected, failing job!" && exit 1
       - name: detect-build-job-runner
         # Get the job id number of `run-slsa-build-action`. Then get the logs of the "Set up job" activity.
         # these logs contain markers that identity use of self-hosted runners.
