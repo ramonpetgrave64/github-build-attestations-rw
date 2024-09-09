@@ -134,21 +134,32 @@ jobs:
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID } = process.env
             await artifactClient.downloadArtifact(ARTIFACT_ID, { path: 'artifacts/'})
-      - name: verify-stub-artifact
+      - name: download-stub-attestation
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          ARTIFACT_ID: ${{ needs.build.outputs.stub-attestation-id }}
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { ARTIFACT_ID } = process.env
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: 'attestations/'})
+      - name: verify-stub
         env:
           SIGNER_WORKFLOW_CERT_IDENTITY: $${{ inputs.stub-workflow-cert-identity }}
           SOURCE_REPO: ${{ github.repository }}
           SOURCE_REF: ${{ github.ref }}
         run: |
-          FILE=$( find . -type f  | head -n 1 )
+          STUB=$( find ./artifacts -type f  | head -n 1 )
+          ATT=$( find ./attestations -type f  | head -n 1 )
           gh attestation verify \
-              $FILE \
+              $STUB \
+              --bundle $ATT \
               --deny-self-hosted-runners \
               --repo "$SOURCE_REPO" \
               --cert-identity "$SIGNER_WORKFLOW_CERT_IDENTITY" \
               --format json --jq '.[].verificationResult.signature.certificate.sourceRepositoryRef' \
             | grep "^$SOURCE_REF$" \
-          && rm $FILE
+          && rm -rf ./artifacts ./attestations
       - name: download-artifact
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
