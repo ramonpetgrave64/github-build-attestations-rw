@@ -50,6 +50,8 @@ jobs:
       stub-artifact-id: ${{ steps.upload-stub-artifact.outputs.artifact-id }}
     permissions:
       contents: read
+      id-token: write
+      attestations: write
     runs-on: ${{ inputs.build-runner-label }}
     steps:
       # - name: detect-runner
