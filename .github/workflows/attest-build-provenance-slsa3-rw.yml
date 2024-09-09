@@ -145,7 +145,7 @@ jobs:
             await artifactClient.downloadArtifact(ARTIFACT_ID, { path: 'attestations/'})
       - name: verify-stub
         env:
-          SIGNER_WORKFLOW_CERT_IDENTITY: $${{ inputs.stub-workflow-cert-identity }}
+          SIGNER_WORKFLOW_CERT_IDENTITY: ${{ inputs.stub-workflow-cert-identity }}
           SOURCE_REPO: ${{ github.repository }}
           SOURCE_REF: ${{ github.ref }}
         run: |
