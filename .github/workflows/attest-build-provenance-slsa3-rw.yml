@@ -82,6 +82,13 @@ on:
         required: false
         default: https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev
         type: string
+      self-hosted-runner-check-high-perms:
+        description: >
+          Whether to use the alternate method of checking for self-hosted runners on the Build Job. This requires the permission to
+          sign an attestation with another child reusable workflow with an alternate certificate identity `stub-workflow-do-not-trust.yml`.
+        required: false
+        default: false
+        type: boolean
       stub-workflow-cert-identity:
         description: >
           The Build sub-reusable workflow's --cert-identity to use in the `attest` Job, to make sure the
@@ -93,14 +100,42 @@ on:
       build-artifact-id:
         description: >
           The artifact-id of the build artifacts. See the `download-artifact` Step for how to use.
-        value: ${{ jobs.build.outputs.artifact-id }}
+        value: ${{ inputs.self-hosted-runner-check-high-perms && jobs.build-high-perms.outputs.build-artifact-id || jobs.build-low-perms.outputs.build-artifact-id }}
       attestation-artifact-id:
         description: >
           The artifact-id of the build attestations. See the `download-artifact` Step for how to use.
         value: ${{ jobs.sign.outputs.attestation-artifact-id }}
 
 jobs:
-  build:
+  build-low-perms:
+    if: ${{ !inputs.self-hosted-runner-check-high-perms }}
+    outputs:
+      job-id: ${{ github.job }}
+      build-artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
+    permissions:
+      contents: read
+    runs-on: ${{ inputs.build-runner-label }}
+    steps:
+      - name: detect-runner
+        if: ${{ runner.environment != 'github-hosted' }}
+        run: echo "self-hosted runner detected, failing job!" && exit 1
+      - name: checkout-source-repo
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.1.7
+      - name: slsa-build
+        if: ${{ runner.environment == 'github-hosted' }}
+        uses: ./.github/actions/slsa-build
+        env:
+          GITHUB_TOKEN: ${{ inputs.build-github-token }}
+      - name: upload-artifact
+        id: upload-artifact
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
+        with:
+          name: ${{ inputs.build-artifact-name }}
+          path: ${{ inputs.subject-path }}
+          if-no-files-found: error
+
+  build-high-perms:
+    if: ${{ inputs.self-hosted-runner-check-high-perms }}
     permissions:
       contents: read
       id-token: write
@@ -116,7 +151,9 @@ jobs:
   sign:
     outputs:
       attestation-artifact-id: ${{ steps.upload-attestation.outputs.artifact-id }}
-    needs: build
+      build-artifact-id: ${{ inputs.self-hosted-runner-check-high-perms && needs.build-high-perms.outputs.build-artifact-id || needs.build-low-perms.outputs.build-artifact-id }}
+    needs: [build-low-perms, build-high-perms]
+    if: ${{ always() }}
     permissions:
       id-token: write
       attestations: write
@@ -126,24 +163,27 @@ jobs:
       # but the Javascript library does. See: https://github.com/actions/download-artifact/issues/349
       - run: npm install @actions/artifact@2.1.9
       - name: download-stub
+        if: ${{ inputs.self-hosted-runner-check-high-perms }}
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
-          ARTIFACT_ID: ${{ needs.build.outputs.stub-artifact-id }}
+          ARTIFACT_ID: ${{ needs.build-high-perms.outputs.stub-artifact-id }}
         with:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID } = process.env
             await artifactClient.downloadArtifact(ARTIFACT_ID, { path: 'artifacts/'})
       - name: download-stub-attestation
+        if: ${{ inputs.self-hosted-runner-check-high-perms }}
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
-          ARTIFACT_ID: ${{ needs.build.outputs.stub-attestation-id }}
+          ARTIFACT_ID: ${{ needs.build-high-perms.outputs.stub-attestation-id }}
         with:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID } = process.env
             await artifactClient.downloadArtifact(ARTIFACT_ID, { path: 'attestations/'})
       - name: verify-stub
+        if: ${{ inputs.self-hosted-runner-check-high-perms }}
         env:
           SIGNER_WORKFLOW_CERT_IDENTITY: ${{ inputs.stub-workflow-cert-identity }}
           SOURCE_REPO: ${{ github.repository }}
@@ -160,10 +200,10 @@ jobs:
               --format json --jq '.[].verificationResult.signature.certificate.sourceRepositoryRef' \
             | grep "^$SOURCE_REF$" \
           && rm -rf ./artifacts ./attestations
-      - name: download-artifact
+      - name: download-build-artifact
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
-          ARTIFACT_ID: ${{ needs.build.outputs.build-artifact-id }}
+          ARTIFACT_ID: ${{ inputs.self-hosted-runner-check-high-perms && needs.build-high-perms.outputs.build-artifact-id || needs.build-low-perms.outputs.build-artifact-id }}
         with:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
@@ -186,12 +226,12 @@ jobs:
           if-no-files-found: error
 
   test-verify:
-    needs: [build, sign]
+    needs: [sign]
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
       ARTIFACTS_FOLDER: ./artifacts
-      ARTIFACT_ID: ${{ needs.build.outputs.build-artifact-id }}
+      ARTIFACT_ID: ${{ needs.sign.outputs.build-artifact-id }}
       SOURCE_REPO: ${{ github.repository }}
       SOURCE_REF: ${{ github.ref }}
       SIGNER_WORKFLOW_CERT_IDENTITY: ${{ inputs.test-verify-signer-workflow-cert-identity }}
