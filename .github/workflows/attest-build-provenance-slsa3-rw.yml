@@ -189,6 +189,7 @@ jobs:
     needs: [build, sign]
     runs-on: ubuntu-latest
     env:
+      GH_TOKEN: ${{ github.token }}
       ARTIFACTS_FOLDER: ./artifacts
       ARTIFACT_ID: ${{ needs.build.outputs.build-artifact-id }}
       SOURCE_REPO: ${{ github.repository }}
