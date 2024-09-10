@@ -206,6 +206,43 @@ jobs:
               --format json --jq '.[].verificationResult.signature.certificate.sourceRepositoryRef' \
             | grep "^$SOURCE_REF$" \
           && rm -rf "$ARTIFACTS_FOLDER" "$ATTESTATIONS_FOLDER"
+
+      - name: detect-build-job-runner
+        if: ${{ !inputs.self-hosted-runner-check-high-perms }}
+        # Get the job id number of `run-slsa-build-action`. Then get the logs of the "Set up job" activity.
+        # these logs contain markers that identity use of self-hosted runners.
+        # "Machine name:" should only appear in the logs for self-hosted runners.
+        # See
+        # - https://github.com/actions/runner/pull/539/files#diff-e10dd2daf26c47f8e2914b189bbbc8043bdcd073c633c9a2d29d67f0ec3b4581R77
+        # - https://github.com/orgs/community/discussions/111347#discussioncomment-10490619
+        # Since there may be multiple Jobs named `run-slsa-build-action`, and our Job name is particular, we retrieve the logs for all 
+        # Jobs with that name.
+        env:
+            RUN_ID: ${{ github.run_id }}
+            RUN_ATTEMPT: ${{ github.run_attempt }}
+            GH_TOKEN: ${{ github.token }}
+        run: |
+          BUILD_JOB_IDS=$(
+              gh run view "$RUN_ID" --attempt "$RUN_ATTEMPT" --json jobs \
+                  --jq '.jobs[] | select((.conclusion="success") and (.name | endswith("build-low-perms"))) | .databaseId'
+          )
+          while read -r ID; do
+              echo getting "Set up job" logs for Job "$ID"
+              JOB_LOGS=$( gh run view "$RUN_ID" --job "$ID" --log | sed -n -e '/Set up job/I,/Complete job name/I p' )
+              ABORT=false
+              if grep -qi "Machine name:" <<< "$JOB_LOGS"; then
+                  echo "detected a self-hosted runner, aborting attestation!"
+                  ABORT=true
+              else
+                  echo "self-hosted runner not detected."
+              fi
+          done <<< "$BUILD_JOB_IDS"
+          if [ "$ABORT" = true ]; then
+              echo "Detected self hosted runner. Aborting"
+              exit 1
+          else
+              echo "No self hosted runner detected. Proceeding."
+
       - name: download-build-artifact
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:

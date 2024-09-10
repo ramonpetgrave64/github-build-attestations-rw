@@ -159,11 +159,11 @@ Job was using a github-hosted runner. The veriier ensures that the Signing Job w
             # Since there may be multiple Jobs named `run-slsa-build-action`, and our Job name is particular, we retrieve the logs for all 
             # Jobs with that name.
             env:
-            WORKFLOW_NAME: 
-            RUN_ID: ${}
-            BUILD_JOB_ID: ${{ needs.run-slsa-build-action.outputs.job-id }}
-            RUN_ATTEMPT: ${{ github.run_attempt }}
-            GH_TOKEN: ${{ github.token }}
+                WORKFLOW_NAME: 
+                RUN_ID: ${}
+                BUILD_JOB_ID: ${{ needs.run-slsa-build-action.outputs.job-id }}
+                RUN_ATTEMPT: ${{ github.run_attempt }}
+                GH_TOKEN: ${{ github.token }}
             run: |
             BUILD_JOB_IDS=$(
                 gh run view "$RUN_ID" --attempt "$RUN_ATTEMPT" --json jobs \
@@ -185,7 +185,6 @@ Job was using a github-hosted runner. The veriier ensures that the Signing Job w
                 exit 1
             else
                 echo "No self hosted runner detected. Proceeding."
-                
     ```
 
 
