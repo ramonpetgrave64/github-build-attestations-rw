@@ -80,7 +80,7 @@ on:
           The signer workflow's --cert-identity to use in the `verify` Job, to make sure the
           artifacts and attestations can be verified with the Github CLI.
         required: false
-        default: https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev
+        default: https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/main
         type: string
       self-hosted-runner-check-high-perms:
         description: >
@@ -94,7 +94,7 @@ on:
           The Build sub-reusable workflow's --cert-identity to use in the `attest` Job, to make sure the
           Build Job was using a github-hosted runner.
         required: false
-        default: https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/stub-workflow-do-not-trust.yml@refs/heads/dev
+        default: https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/stub-workflow-do-not-trust.yml@refs/heads/main
         type: string    
     outputs:
       build-artifact-id:
