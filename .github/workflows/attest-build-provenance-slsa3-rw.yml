@@ -223,6 +223,7 @@ jobs:
           RUN_ATTEMPT: ${{ github.run_attempt }}
           GH_TOKEN: ${{ inputs.build-github-token != '' && inputs.build-github-token || github.token }}
         run: |
+          echo sleeping for 1m && sleep 1m
           BUILD_JOB_IDS=$(
             gh run view "$RUN_ID" --repo "$REPO" --attempt "$RUN_ATTEMPT" --json jobs \
                 --jq '.jobs[] | select((.conclusion="success") and (.name | endswith("build-low-perms"))) | .databaseId'
