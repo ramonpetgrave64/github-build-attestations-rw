@@ -141,7 +141,8 @@ The second method is for detecting truly malicious self-hosted runners that try 
 
 3.
     The third potential method examines the logs of the Build Job for [special markers](https://github.com/orgs/community/discussions
-111347#discussioncomment-10490619) to positively identify self-hosted runners. We cannot use this method within the reusable workflow
+111347#discussioncomment-10490619) to positively identify self-hosted runners. While the Github UI allows viewing Job logs at any time,
+We cannot use this method within the reusable workflow
 because Github's API only makes the logs available after the workflow run has completed.
 
     Here's how it could work: The Signing Job would perform this step before deciding to
@@ -149,42 +150,45 @@ sign the build artifacts. And then to check the honesty of the Signing Job, the 
 Job was using a github-hosted runner. The veriier ensures that the Signing Job was github-hosted, which ensures that the Build Job was github-hosted.
 
     ```yaml
-        - name: detect-build-job-runner
-            # Get the job id number of `run-slsa-build-action`. Then get the logs of the "Set up job" activity.
-            # these logs contain markers that identity use of self-hosted runners.
-            # "Machine name:" should only appear in the logs for self-hosted runners.
-            # See
-            # - https://github.com/actions/runner/pull/539/files#diff-e10dd2daf26c47f8e2914b189bbbc8043bdcd073c633c9a2d29d67f0ec3b4581R77
-            # - https://github.com/orgs/community/discussions/111347#discussioncomment-10490619
-            # Since there may be multiple Jobs named `run-slsa-build-action`, and our Job name is particular, we retrieve the logs for all 
-            # Jobs with that name.
-            env:
-                WORKFLOW_NAME: 
-                RUN_ID: ${}
-                BUILD_JOB_ID: ${{ needs.run-slsa-build-action.outputs.job-id }}
-                RUN_ATTEMPT: ${{ github.run_attempt }}
-                GH_TOKEN: ${{ github.token }}
-            run: |
-            BUILD_JOB_IDS=$(
-                gh run view "$RUN_ID" --attempt "$RUN_ATTEMPT" --json jobs \
-                    --jq '.jobs[] | select((.conclusion="success") and (.name | endswith("build"))) | .databaseId'
-            )
-            while read -r ID; do
-                echo getting "Set up job" logs for Job "$ID"
-                JOB_LOGS=$( gh run view "$RUN_ID" --job "$ID" --log | sed -n -e '/Set up job/I,/Complete job name/I p' )
-                ABORT=false
-                if grep -qi "Machine name:" <<< "$JOB_LOGS"; then
-                    echo "detected a self-hosted runner, aborting attestation!"
-                    ABORT=true
-                else
-                    echo "self-hosted runner not detected."
-                fi
-            done <<< "$BUILD_JOB_IDS"
-            if [ "$ABORT" = true ]; then
-                echo "Detected self hosted runner. Aborting"
-                exit 1
-            else
-                echo "No self hosted runner detected. Proceeding."
+      - name: detect-build-job-runner
+        if: ${{ !inputs.self-hosted-runner-check-high-perms }}
+        # Get the job id number of `run-slsa-build-action`. Then get the logs of the "Set up job" activity.
+        # these logs contain markers that identity use of self-hosted runners.
+        # "Machine name:" should only appear in the logs for self-hosted runners.
+        # See
+        # - https://github.com/actions/runner/pull/539/files#diff-e10dd2daf26c47f8e2914b189bbbc8043bdcd073c633c9a2d29d67f0ec3b4581R77
+        # - https://github.com/orgs/community/discussions/111347#discussioncomment-10490619
+        # Since there may be multiple Jobs named `run-slsa-build-action`, and our Job name is particular, we retrieve the logs for all 
+        # Jobs with that name.
+        env:
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          GH_TOKEN: ${{ inputs.build-github-token != '' && inputs.build-github-token || github.token }}
+        run: |
+          echo sleeping for 1m && sleep 1m
+          BUILD_JOB_IDS=$(
+            gh run view "$RUN_ID" --repo "$REPO" --attempt "$RUN_ATTEMPT" --json jobs \
+                --jq '.jobs[] | select((.conclusion="success") and (.name | endswith("build-low-perms"))) | .databaseId'
+          )
+          while read -r ID; do
+              echo getting "Set up job" logs for Job "$ID"
+              JOB_LOGS=$( gh run view "$RUN_ID" --repo "$REPO" --job "$ID" --log | sed -n -e '/Set up job/I,/Complete job name/I p' )
+              ABORT=false
+              if grep -qi "Machine name:" <<< "$JOB_LOGS"; then
+                  echo "detected a self-hosted runner, aborting attestation!"
+                  ABORT=true
+              else
+                  echo "self-hosted runner not detected."
+              fi
+          done <<< "$BUILD_JOB_IDS"
+          if [ "$ABORT" = true ]; then
+              echo "Detected self hosted runner. Aborting"
+              exit 1
+          else
+              echo "No self hosted runner detected. Proceeding."
+              exit 0
+          fi
     ```
 
 
@@ -258,5 +262,291 @@ not be recored neither in source code nor in provenance, but the differences in 
 Here is the full code of the reusable workflow we describe, including instructions.
 
 ```yaml
-...
+# Building and attesting are performed in two separated Jobs to elevate to SLSA3.
+# This workflow requires a `./slsa_build.sh` at the repository root to run your build.
+
+# This workflow invokes your Build Action at `.github/actions/slsa-build`'s `action.yml`
+# Example `.github/actions/slsa-build/action.yml`
+
+# name: SLSA3 Build
+# description: >-
+#   A named Action that you have at in your source repo .github/actions/slsa-build/action.yml.
+#   The Workflow `attest-build-provenance-sls3-rw` will search invoke this action to run
+#   your build. You man have any steps or invoke yet another Action.
+# runs:
+#   using: composite
+#   steps:
+#     - name: build
+#       shell: bash
+#       run: make release
+
+# Example workflow invocation:
+
+# jobs:
+#   build-and-attest:
+#     permissions:
+#       id-token: write
+#       attestations: write
+#       contents: read
+#     uses: ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@dev
+#     with:
+#       build-runner-label: ubuntu-latest
+#       subject-path: |
+#         ./gundam
+#         ./myhero
+
+name: Attest Build Provenance SLSA3 Resuable Workflow
+
+permissions: {}
+
+on:
+  workflow_call:
+    inputs:
+      build-artifact-name:
+        description: >
+          The name of Github workflow artifact to store the subject files
+        default: slsa3_build_artifact
+        required: false
+        type: string
+      build-attestation-name:
+        description: >
+          The name of Github workflow artifact to store the attestation bundle file
+        default: slsa3_build_attestation
+        required: false
+        type: string
+      subject-path:
+        description: >
+          Path to the artifact serving as the subject of the attestation. May contain a
+          glob pattern or list of paths (total subject count cannot exceed 2500).
+          See https://github.com/actions/upload-artifact?tab=readme-ov-file#examples.
+        required: true
+        type: string
+      show-summary:
+        description: >
+          Whether to attach a list of generated attestations to the workflow run
+          summary page. Defaults to true.
+        default: true
+        required: false
+        type: boolean
+      build-github-token:
+        description: >
+          The GitHub token used as environment variable GH_TOKEN to ./slsa_build.sh.
+        default: ''
+        required: false
+        type: string
+      build-runner-label:
+        description: >
+          The runner label to pass to `runs-on:`. e.g., "ubuntu-latest". 
+        required: true
+        type: string
+      test-verify-signer-workflow-cert-identity:
+        description: >
+          The signer workflow's --cert-identity to use in the `verify` Job, to make sure the
+          artifacts and attestations can be verified with the Github CLI.
+        required: false
+        default: https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev
+        type: string
+      self-hosted-runner-check-high-perms:
+        description: >
+          Whether to use the alternate method of checking for self-hosted runners on the Build Job. This requires the permission to
+          sign an attestation with another child reusable workflow with an alternate certificate identity `stub-workflow-do-not-trust.yml`.
+        required: false
+        default: false
+        type: boolean
+      stub-workflow-cert-identity:
+        description: >
+          The Build sub-reusable workflow's --cert-identity to use in the `attest` Job, to make sure the
+          Build Job was using a github-hosted runner.
+        required: false
+        default: https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/stub-workflow-do-not-trust.yml@refs/heads/dev
+        type: string    
+    outputs:
+      build-artifact-id:
+        description: >
+          The artifact-id of the build artifacts. See the `download-artifact` Step for how to use.
+        value: ${{ inputs.self-hosted-runner-check-high-perms && jobs.build-high-perms.outputs.build-artifact-id || jobs.build-low-perms.outputs.build-artifact-id }}
+      attestation-artifact-id:
+        description: >
+          The artifact-id of the build attestations. See the `download-artifact` Step for how to use.
+        value: ${{ jobs.sign.outputs.attestation-artifact-id }}
+
+jobs:
+  build-low-perms:
+    if: ${{ !inputs.self-hosted-runner-check-high-perms }}
+    outputs:
+      job-id: ${{ github.job }}
+      build-artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
+    permissions:
+      contents: read
+    runs-on: ${{ inputs.build-runner-label }}
+    steps:
+      - name: detect-runner
+        if: ${{ runner.environment != 'github-hosted' }}
+        run: echo "self-hosted runner detected, failing job!" && exit 1
+      - name: checkout-source-repo
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.1.7
+      - name: slsa-build
+        if: ${{ runner.environment == 'github-hosted' }}
+        uses: ./.github/actions/slsa-build
+        env:
+          GITHUB_TOKEN: ${{ inputs.build-github-token }}
+      - name: upload-artifact
+        id: upload-artifact
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
+        with:
+          name: ${{ inputs.build-artifact-name }}
+          path: ${{ inputs.subject-path }}
+          if-no-files-found: error
+
+  build-high-perms:
+    if: ${{ inputs.self-hosted-runner-check-high-perms }}
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/stub-workflow-do-not-trust.yml
+    with: 
+      build-runner-label: ${{ inputs.build-runner-label }}
+      build-artifact-name: ${{ inputs.build-artifact-name }}
+      subject-path: ${{ inputs.subject-path }}
+      show-summary: ${{ inputs.show-summary }}
+      build-github-token: ${{ inputs.build-github-token }}
+
+  sign:
+    outputs:
+      attestation-artifact-id: ${{ steps.upload-attestation.outputs.artifact-id }}
+      build-artifact-id: ${{ inputs.self-hosted-runner-check-high-perms && needs.build-high-perms.outputs.build-artifact-id || needs.build-low-perms.outputs.build-artifact-id }}
+    needs: [build-low-perms, build-high-perms]
+    if: ${{ always() }}
+    permissions:
+      id-token: write
+      attestations: write
+    runs-on: ubuntu-latest
+    env:
+      ARTIFACTS_FOLDER: ./artifacts
+      ATTESTATIONS_FOLDER: ./attestations
+    steps:
+      - name: detect-runner
+        if: ${{ runner.environment != 'github-hosted' }}
+        run: echo "self-hosted runner detected, failing job!" && exit 1
+      # actions/download-artifact@v4 does not yet support downloading via the immutable artifact-id,
+      # but the Javascript library does. See: https://github.com/actions/download-artifact/issues/349
+      - run: npm install @actions/artifact@2.1.9
+      - name: download-stub
+        if: ${{ inputs.self-hosted-runner-check-high-perms }}
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          ARTIFACT_ID: ${{ needs.build-high-perms.outputs.stub-artifact-id }}
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { ARTIFACT_ID } = process.env
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: 'artifacts/'})
+      - name: download-stub-attestation
+        if: ${{ inputs.self-hosted-runner-check-high-perms }}
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          ARTIFACT_ID: ${{ needs.build-high-perms.outputs.stub-attestation-id }}
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { ARTIFACT_ID, ATTESTATIONS_FOLDER } = process.env
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ATTESTATIONS_FOLDER })
+      - name: verify-stub
+        if: ${{ inputs.self-hosted-runner-check-high-perms }}
+        env:
+          SIGNER_WORKFLOW_CERT_IDENTITY: ${{ inputs.stub-workflow-cert-identity }}
+          SOURCE_REPO: ${{ github.repository }}
+          SOURCE_REF: ${{ github.ref }}
+        run: |
+          STUB=$( find "$ARTIFACTS_FOLDER" -type f  | head -n 1 )
+          ATT=$( find "$ATTESTATIONS_FOLDER" -type f  | head -n 1 )
+          gh attestation verify \
+              $STUB \
+              --bundle $ATT \
+              --deny-self-hosted-runners \
+              --repo "$SOURCE_REPO" \
+              --cert-identity "$SIGNER_WORKFLOW_CERT_IDENTITY" \
+              --format json --jq '.[].verificationResult.signature.certificate.sourceRepositoryRef' \
+            | grep "^$SOURCE_REF$" \
+          && rm -rf "$ARTIFACTS_FOLDER" "$ATTESTATIONS_FOLDER"
+      - name: download-build-artifact
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          ARTIFACT_ID: ${{ inputs.self-hosted-runner-check-high-perms && needs.build-high-perms.outputs.build-artifact-id || needs.build-low-perms.outputs.build-artifact-id }}
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { ARTIFACT_ID, ARTIFACTS_FOLDER } = process.env
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER })
+      - name: attest-build-provenance
+        if: ${{ runner.environment == 'github-hosted' }}
+        id: attest-build-provenance
+        uses: actions/attest-build-provenance@310b0a4a3b0b78ef57ecda988ee04b132db73ef8 # v1.4.1
+        with:
+          subject-path: ${{ env.ARTIFACTS_FOLDER }}/*
+          show-summary: ${{ inputs.show-summary }}
+      - name: upload-attestation
+        id: upload-attestation
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
+        with:
+          name: ${{ inputs.build-attestation-name }}
+          path: ${{ steps.attest-build-provenance.outputs.bundle-path }}
+          if-no-files-found: error
+
+  test-verify:
+    needs: sign
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ARTIFACTS_FOLDER: ./artifacts
+      ATTESTATIONS_FOLDER: ./attestations
+      BUILD_ARTIFACT_ID: ${{ needs.sign.outputs.build-artifact-id }}
+      ATTESTATION_ARTIFACT_ID: ${{ needs.sign.outputs.attestation-artifact-id }}
+      SOURCE_REPO: ${{ github.repository }}
+      SOURCE_REF: ${{ github.ref }}
+      SIGNER_WORKFLOW_CERT_IDENTITY: ${{ inputs.test-verify-signer-workflow-cert-identity }}
+    steps:
+      - name: detect-runner
+        if: ${{ runner.environment != 'github-hosted' }}
+        run: echo "self-hosted runner detected, failing job!" && exit 1
+      - run: npm install @actions/artifact@2.1.9
+      - name: download-artifact
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { BUILD_ARTIFACT_ID, ARTIFACTS_FOLDER } = process.env
+            await artifactClient.downloadArtifact(BUILD_ARTIFACT_ID, { path: ARTIFACTS_FOLDER})
+      - name: download-attestation
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { ATTESTATION_ARTIFACT_ID, ATTESTATIONS_FOLDER } = process.env
+            await artifactClient.downloadArtifact(ATTESTATION_ARTIFACT_ID, { path: ATTESTATIONS_FOLDER})
+      - name: online-verify-with-cert-identity
+        run: |
+          for FILE in "$ARTIFACTS_FOLDER"/*; do
+            gh attestation verify \
+              $FILE \
+              --deny-self-hosted-runners \
+              --repo "$SOURCE_REPO" \
+              --cert-identity "$SIGNER_WORKFLOW_CERT_IDENTITY" \
+              --format json --jq '.[].verificationResult.signature.certificate.sourceRepositoryRef' \
+            | grep "^$SOURCE_REF$"
+          done
+      - name: offline-verify-with-cert-identity
+        run: |
+          ATT=$( find "$ATTESTATIONS_FOLDER" -type f  | head -n 1 )
+          for FILE in "$ARTIFACTS_FOLDER"/*; do
+            gh attestation verify \
+              $FILE \
+              --deny-self-hosted-runners \
+              --repo "$SOURCE_REPO" \
+              --cert-identity "$SIGNER_WORKFLOW_CERT_IDENTITY" \
+              --format json --jq '.[].verificationResult.signature.certificate.sourceRepositoryRef' \
+            | grep "^$SOURCE_REF$"
+          done
 ```
