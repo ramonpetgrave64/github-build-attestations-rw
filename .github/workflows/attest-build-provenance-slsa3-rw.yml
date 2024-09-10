@@ -218,17 +218,18 @@ jobs:
         # Since there may be multiple Jobs named `run-slsa-build-action`, and our Job name is particular, we retrieve the logs for all 
         # Jobs with that name.
         env:
-            RUN_ID: ${{ github.run_id }}
-            RUN_ATTEMPT: ${{ github.run_attempt }}
-            GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          GH_TOKEN: ${{ inputs.build-github-token != '' && inputs.build-github-token || github.token }}
         run: |
           BUILD_JOB_IDS=$(
-              gh run view "$RUN_ID" --attempt "$RUN_ATTEMPT" --json jobs \
-                  --jq '.jobs[] | select((.conclusion="success") and (.name | endswith("build-low-perms"))) | .databaseId'
+            gh run view "$RUN_ID" --repo "$REPO" --attempt "$RUN_ATTEMPT" --json jobs \
+                --jq '.jobs[] | select((.conclusion="success") and (.name | endswith("build-low-perms"))) | .databaseId'
           )
           while read -r ID; do
               echo getting "Set up job" logs for Job "$ID"
-              JOB_LOGS=$( gh run view "$RUN_ID" --job "$ID" --log | sed -n -e '/Set up job/I,/Complete job name/I p' )
+              JOB_LOGS=$( gh run view "$RUN_ID" --repo "$REPO" --job "$ID" --log | sed -n -e '/Set up job/I,/Complete job name/I p' )
               ABORT=false
               if grep -qi "Machine name:" <<< "$JOB_LOGS"; then
                   echo "detected a self-hosted runner, aborting attestation!"
@@ -242,6 +243,8 @@ jobs:
               exit 1
           else
               echo "No self hosted runner detected. Proceeding."
+              exit 0
+          fi
 
       - name: download-build-artifact
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
