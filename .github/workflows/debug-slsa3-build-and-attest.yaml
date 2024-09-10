@@ -5,13 +5,29 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-attest:
+  first-and-attest:
     permissions:
       id-token: write
       attestations: write
       contents: read
     uses: ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@dev
     with:
+      build-runner-label: ubuntu-latest
+      subject-path: |
+        ./gundam
+        ./myhero
+
+  second-build-and-attest-high-perms:
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+    uses: ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@dev
+    with:
+      self-hosted-runner-check-high-perms: true
+      build-runner-label: ubuntu-latest
+      build-artifact-name: alt-artifact-high-perms
+      build-attestation-name: alt-attestation-high-perms
       subject-path: |
         ./gundam
         ./myhero
