@@ -140,8 +140,7 @@ The second method is for detecting truly malicious self-hosted runners that try 
     Given the risk, the use of this method is optional and turned off by default with `self-hosted-runner-check-high-perm`.
 
 3.
-    The third potential method examines the logs of the Build Job for [special markers](https://github.com/orgs/community/discussions
-111347#discussioncomment-10490619) to positively identify self-hosted runners. While the Github UI allows viewing Job logs at any time,
+    The third potential method examines the logs of the Build Job for [special markers](https://github.com/orgs/community/discussions111347#discussioncomment-10490619) to positively identify self-hosted runners. While the Github UI allows viewing Job logs at any time,
 We cannot use this method within the reusable workflow
 because Github's API only makes the logs available after the workflow run has completed.
 
