@@ -21,10 +21,10 @@ Github has an official Action for creating signed SLSA attestations and CLI tool
 
 While the signed attestations are a great step towards securing the distribution of your built artifacts, Github's [documentation](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-and-reusable-workflows-to-achieve-slsa-v1-build-level-3) suggests using Reusable Workflows to elevate your builds to SLSA Build Level 3, which is designed to mitigate these risks:
 
-    * unapproved changes (brancges or tags)
-    * exposed secret signing material
-    * self-hosted runners
-    * ambiguous build steps
+  * unapproved changes (brancges or tags)
+  * exposed secret signing material
+  * self-hosted runners
+  * ambiguous build steps
 
 This post discusses and demonstrates how create a Reusable Workflow and verify artifacts to meet [slsa.dev's requirements](https://slsa.dev/spec/v1.0/levels#build-track) using Github's `actions/attest-build-artifacts`. First we show the complete way to verify artifacts produced by this workflow. Then we discuss how the workflow hardens your builds to meet L3 requirements.
 
