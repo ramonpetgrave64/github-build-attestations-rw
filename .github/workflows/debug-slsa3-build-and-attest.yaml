@@ -12,7 +12,7 @@ jobs:
       contents: read
     uses: ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@dev
     with:
-      test-verify-signer-workflow-cert-identity: >
+      test-verify-signer-workflow-cert-identity: >-
         https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev
       build-runner-label: ubuntu-latest
       subject-path: |
@@ -26,7 +26,7 @@ jobs:
       contents: read
     uses: ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@dev
     with:
-      test-verify-signer-workflow-cert-identity: >
+      test-verify-signer-workflow-cert-identity: >-
         https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev
       self-hosted-runner-check-high-perms: true
       build-runner-label: ubuntu-latest
