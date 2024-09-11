@@ -28,6 +28,8 @@ jobs:
     with:
       test-verify-signer-workflow-cert-identity: >-
         https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev
+      stub-workflow-cert-identity: >-
+        https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/stub-workflow-do-not-trust.yml@refs/heads/dev
       self-hosted-runner-check-high-perms: true
       build-runner-label: ubuntu-latest
       build-artifact-name: alt-artifact-high-perms
