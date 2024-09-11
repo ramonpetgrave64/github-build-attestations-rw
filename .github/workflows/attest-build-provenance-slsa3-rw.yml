@@ -283,5 +283,5 @@ jobs:
               --repo "$SOURCE_REPO" \
               --cert-identity "$SIGNER_WORKFLOW_CERT_IDENTITY" \
               --format json --jq '.[].verificationResult.signature.certificate.sourceRepositoryRef' \
-            | grep "^$SOURCE_REF$"
+            | grep "^$SOURCE_REF$" 2>&1
           done
