@@ -8,7 +8,13 @@
 # description: >-
 #   A named Action that you have at in your source repo .github/actions/slsa-build/action.yml.
 #   The Workflow `attest-build-provenance-sls3-rw` will search invoke this action to run
-#   your build. You man have any steps or invoke yet another Action.
+#   your build. You man have any steps or invoke yet another Action. 
+#   You can also include inputs with default values, though the calling workflow will use not use the custom inputs.
+# inputs:
+#   myInput:
+#     description: "A custom input"
+#     required: false
+#     default: "default value"
 # runs:
 #   using: composite
 #   steps:
@@ -24,7 +30,7 @@
 #       id-token: write
 #       attestations: write
 #       contents: read
-#     uses: ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@dev
+#     uses: ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@main
 #     with:
 #       build-runner-label: ubuntu-latest
 #       subject-path: |
@@ -40,13 +46,13 @@ on:
     inputs:
       build-artifact-name:
         description: >
-          The name of Github workflow artifact to store the subject files
+          The name of GitHub workflow artifact to store the subject files
         default: slsa3_build_artifact
         required: false
         type: string
       build-attestation-name:
         description: >
-          The name of Github workflow artifact to store the attestation bundle file
+          The name of GitHub workflow artifact to store the attestation bundle file
         default: slsa3_build_attestation
         required: false
         type: string
@@ -78,7 +84,7 @@ on:
       test-verify-signer-workflow-cert-identity:
         description: >
           The signer workflow's --cert-identity to use in the `verify` Job, to make sure the
-          artifacts and attestations can be verified with the Github CLI.
+          artifacts and attestations can be verified with the GitHub CLI.
         required: false
         default: https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/main
         type: string
