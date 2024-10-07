@@ -9,7 +9,7 @@
 #   A named Action that you have at in your source repo .github/actions/slsa-build/action.yml.
 #   The Workflow `attest-build-provenance-sls3-rw` will search invoke this action to run
 #   your build. You man have any steps or invoke yet another Action. 
-#   You can also include inputs with default values, though the calling workflow will use not use the custom inputs.
+#   You can also include inputs with default values, though the calling workflow will not use the custom inputs.
 # inputs:
 #   myInput:
 #     description: "A custom input"
