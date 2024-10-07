@@ -1,7 +1,6 @@
 name: debug slsa3 build
 
 on: 
-  push:
   workflow_dispatch:
 
 jobs:
