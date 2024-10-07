@@ -6,7 +6,7 @@ on:
   workflow_call:
     inputs:
       build-artifact-name:
-        description: The name of Github workflow artifact to store the subject files
+        description: The name of GitHub workflow artifact to store the subject files
         default: slsa3_build_artifact
         required: false
         type: string
