@@ -73,7 +73,7 @@ jobs:
           GITHUB_TOKEN: ${{ inputs.build-github-token }}
       - name: upload-build-artifact
         id: upload-build-artifact
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b #v4.5.0
         with:
           name: ${{ inputs.build-artifact-name }}
           path: ${{ inputs.subject-path }}
@@ -87,7 +87,7 @@ jobs:
           show-summary: ${{ inputs.show-summary }}
       - name: upload-stub-artifact
         id: upload-stub-artifact
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b #v4.5.0
         with:
           name: ${{ inputs.build-artifact-name }}-stub
           path: |
@@ -95,7 +95,7 @@ jobs:
           if-no-files-found: error
       - name: upload-stub-attestation
         id: upload-stub-attestation
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a #v4.3.6
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b #v4.5.0
         with:
             name: ${{ inputs.build-artifact-name }}-stub-attestation
             path: |
