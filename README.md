@@ -1,4 +1,4 @@
-This repo contains an example reusable workflow to use GitHub-native tools to elevate your builds to SLSA Build Level 3 requirements, which are designed to mitigate these risks:
+This repo contains an example reusable [workflow](.github/workflows/attest-build-provenance-slsa3-rw.yml) to use GitHub-native tools to elevate your builds to SLSA Build Level 3 requirements, which are designed to mitigate these risks:
 
 This is **not** an official [slsa-framework](https://github.com/slsa-framework/) repo.
 
