@@ -35,9 +35,9 @@ Since it is common in many organizations for developers to run builds and workfl
 Caveat: The CLI does not yet support verifying the source branch or tag, so we use a combination of its `--jq` option and grep to check.
 
 ```shell
-SOURCE_REPO="ramonpetgrave/github-build-attestations-rw"
+SOURCE_REPO="ramonpetgrave64/github-build-attestations-rw"
 SOURCE_REF="refs/heads/main"
-SIGNER_WORKFLOW_CERT_IDENTITY="https://github.com/ramonpetgrave/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev"
+SIGNER_WORKFLOW_CERT_IDENTITY="https://github.com/ramonpetgrave64/github-build-attestations-rw/.github/workflows/attest-build-provenance-slsa3-rw.yml@refs/heads/dev"
 gh attestation verify $ARTIFACT_PATH \
     --deny-self-hosted-runners \
     --repo "$SOURCE_REPO"  \
