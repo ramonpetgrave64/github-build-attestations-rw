@@ -32,7 +32,7 @@ At a minimum, the CLI `gh attestation verify ...` requires both the path to an a
 
 Since it is common in many organizations for developers to run builds and workflows from non-official branches, we'll impose some additional requirements for the verifier to be sure that both the source repo and signer workflow are from approved branches or tags. Verifying the signing workflow's branch means that we're sure that the artifact was built to meet L3 requirements.
 
-Caveat: The CLI does not yet support verifying the source branch or tag, so we use a combination of its `--jq` option and grep to check.
+Caveat: The CLI does [not yet](https://github.com/cli/cli/issues/9602) support verifying the source branch or tag, so we use a combination of its `--jq` option and grep to check.
 
 ```shell
 SOURCE_REPO="ramonpetgrave64/github-build-attestations-rw"
