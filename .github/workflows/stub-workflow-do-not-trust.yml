@@ -81,7 +81,7 @@ jobs:
       - name: attest-stub
         if: ${{ runner.environment == 'github-hosted' }}
         id: attest-stub
-        uses: actions/attest-build-provenance@520d128f165991a6c774bcb264f323e3d70747f4 # v2.2.0
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
           subject-path: ${{ github.event_path }}
           show-summary: ${{ inputs.show-summary }}
